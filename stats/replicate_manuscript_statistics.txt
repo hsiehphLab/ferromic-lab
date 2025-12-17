@@ -1,0 +1,597 @@
+RECURRENCE
+Chromosome inversion recurrence summary:
+  High-quality inversions with consensus labels: 93 (single-event = 61, recurrent = 32).
+  Fraction recurrent = 34.41%.
+
+SAMPLE SIZES
+Sample sizes for diversity analyses:
+  Inversion callset columns indicate 44 phased individuals (sample columns).
+  Reporting haplotypes as twice the sample count yields 88 potential phased haplotypes.
+  Number of loci with at least two haplotypes (total across orientations): 92.
+  Number of loci with at least two direct haplotypes: 91.
+  Number of loci with at least two inverted haplotypes: 61.
+  Number of loci with at least two haplotypes in either orientation (union): 92.
+  Number of loci with at least two haplotypes in each orientation (intersection): 60.
+  Loci with ≥2 haplotypes per orientation for π: 60 (from output.csv).
+
+DIVERSITY
+Nucleotide diversity (π) by orientation and recurrence:
+  Total loci with finite π estimates: 62.
+  Across all loci: mean π(inverted) = 0.000358, mean π(direct) = 0.000486.
+    Median π(inverted) = 0.000257, median π(direct) = 0.000438.
+    Median π(inverted) is 1.706-fold lower than median π(direct).
+    Two-sided paired t-test comparing orientations: t = -2.977, p = 4.169e-03.
+  Single-event inversions: median π(inverted) = 0.000065, median π(direct) = 0.000376.
+  Recurrent inversions: median π(inverted) = 0.000382, median π(direct) = 0.000465.
+  Within inverted haplotypes: recurrent median π = 0.000382; single-event median π = 0.000065.
+
+PI STRUCTURE
+Nucleotide diversity structure (Edge vs Middle and Internal Decay), filtered by consensus inversion status:
+  Qualifying regions (≥40kbp): 57 unique inversions.
+  [Edge vs Middle] Direct/Group 0: n=57 regions. Haplotypes (N): Total=3544, Mean=62.2 [Min 6, Max 81]. Flank Mean = 4.012e-04, Middle Mean = 4.844e-04.
+  [Edge vs Middle] Inverted/Group 1: n=39 regions. Haplotypes (N): Total=765, Mean=19.6 [Min 2, Max 58]. Flank Mean = 2.388e-04, Middle Mean = 2.726e-04.
+  [Edge vs Middle] Overall: n=96 regions. Haplotypes (N): Total=4309, Mean=44.9 [Min 2, Max 81]. Flank Mean = 3.352e-04, Middle Mean = 3.984e-04.
+    - Single-event Inverted (Group 1, Recurrence 0): n=13 regions. Haplotypes (N): Total=138, Mean=10.6 [Min 2, Max 52]. Flank Mean = 2.400e-04, Middle Mean = 1.163e-04.
+    - Recurrent Direct (Group 0, Recurrence 1): n=26 regions. Haplotypes (N): Total=1259, Mean=48.4 [Min 16, Max 77]. Flank Mean = 2.463e-04, Middle Mean = 4.156e-04.
+    - Single-event Direct (Group 0, Recurrence 0): n=31 regions. Haplotypes (N): Total=2285, Mean=73.7 [Min 6, Max 81]. Flank Mean = 5.312e-04, Middle Mean = 5.421e-04.
+    - Recurrent Inverted (Group 1, Recurrence 1): n=26 regions. Haplotypes (N): Total=627, Mean=24.1 [Min 2, Max 58]. Flank Mean = 2.382e-04, Middle Mean = 3.508e-04.
+
+Internal decay (Spearman's ρ of diversity vs distance from start for first 100kb, loci ≥100kb):
+  Overall (All Consensus 0+1): ρ = 0.500 (p(two-sided) = 2.156e-04, n = 60).
+  Single-Event Inverted (G1, R0): ρ = 0.407 (p(two-sided) = 3.357e-03, n = 8).
+  Recurrent Direct (G0, R1): ρ = 0.302 (p(two-sided) = 0.033, n = 16).
+  Recurrent Inverted (G1, R1): ρ = 0.290 (p(two-sided) = 0.041, n = 16).
+  Single-Event Direct (G0, R0): ρ = 0.440 (p(two-sided) = 1.402e-03, n = 20).
+
+Internal decay (median within 2kb bins, Spearman's ρ for first 100kb, loci ≥100kb):
+  Overall (All Consensus 0+1): ρ = 0.500 (p(two-sided) = 2.156e-04, n = 60).
+  Single-Event Inverted (G1, R0): ρ = 0.407 (p(two-sided) = 3.357e-03, n = 8).
+  Recurrent Direct (G0, R1): ρ = 0.302 (p(two-sided) = 0.033, n = 16).
+  Recurrent Inverted (G1, R1): ρ = 0.290 (p(two-sided) = 0.041, n = 16).
+  Single-Event Direct (G0, R0): ρ = 0.440 (p(two-sided) = 1.402e-03, n = 20).
+
+  Saved Spearman decay points (including q-values) to: data/spearman_decay_points.tsv.
+
+HUDSON FST EDGE DECAY
+Folded Hudson FST decay (two-sided Spearman testing for changes from edge to center):
+  Reporting only inversions with ≥5 usable bins and finite two-sided p-values; others are omitted.
+  chr10:46983451-47468232 (Recurrent):
+    rho=0.601, p(two-sided)=1.01470054432865e-05, q=0.000643955398996532, bins=46
+  chr10:46983451-47468232 (Recurrent):
+    rho=0.585, p(two-sided)=1.95137999695919e-05, q=0.000643955398996532, bins=46
+  chr10:46983451-47468232 (Recurrent):
+    rho=-0.252, p(two-sided)=0.0917130083847862, q=0.288240883495042, bins=46
+  chr10:79542901-80217413 (Single-event):
+    rho=0.044, p(two-sided)=0.769199683620293, q=0.908774183046825, bins=46
+  chr10:79542901-80217413 (Single-event):
+    rho=-0.059, p(two-sided)=0.69561664458308, q=0.908774183046825, bins=46
+  chr10:79542901-80217413 (Single-event):
+    rho=0.046, p(two-sided)=0.763601461403526, q=0.908774183046825, bins=46
+  chr11:50154999-50324102 (Recurrent):
+    rho=-0.046, p(two-sided)=0.771081125009427, q=0.908774183046825, bins=42
+  chr11:50154999-50324102 (Recurrent):
+    rho=-0.014, p(two-sided)=0.931407480097165, q=0.945736825944813, bins=42
+  chr11:50154999-50324102 (Recurrent):
+    rho=-0.066, p(two-sided)=0.678504720513372, q=0.908774183046825, bins=42
+  chr12:131312081-131644839 (Single-event):
+    rho=0.182, p(two-sided)=0.206262046202554, q=0.518063779337086, bins=50
+  chr12:131312081-131644839 (Single-event):
+    rho=0.177, p(two-sided)=0.219463358173547, q=0.518063779337086, bins=50
+  chr12:131312081-131644839 (Single-event):
+    rho=0.148, p(two-sided)=0.305202457781846, q=0.612309615362223, bins=50
+  chr15:30618103-32153204 (Recurrent):
+    rho=0.053, p(two-sided)=0.713399511698228, q=0.908774183046825, bins=50
+  chr15:30618103-32153204 (Recurrent):
+    rho=0.193, p(two-sided)=0.178900213779884, q=0.48118157263903, bins=50
+  chr15:30618103-32153204 (Recurrent):
+    rho=0.063, p(two-sided)=0.662130151953696, q=0.908774183046825, bins=50
+  chr16:14954790-15100859 (Recurrent):
+    rho=0.213, p(two-sided)=0.219784633658158, q=0.518063779337086, bins=35
+  chr16:14954790-15100859 (Recurrent):
+    rho=0.134, p(two-sided)=0.444087570981947, q=0.705184945118033, bins=35
+  chr16:14954790-15100859 (Recurrent):
+    rho=0.187, p(two-sided)=0.281781795274797, q=0.612309615362223, bins=35
+  chr16:16721273-18073542 (Recurrent):
+    rho=0.402, p(two-sided)=0.0037629440317353, q=0.0389056978834163, bins=50
+  chr16:16721273-18073542 (Recurrent):
+    rho=0.359, p(two-sided)=0.0105605385854438, q=0.0696995546639288, bins=50
+  chr16:16721273-18073542 (Recurrent):
+    rho=-0.306, p(two-sided)=0.0308889934990196, q=0.1199219747609, bins=50
+  chr16:28471892-28637651 (Recurrent):
+    rho=0.276, p(two-sided)=0.140394657803136, q=0.421183973409409, bins=30
+  chr16:28471892-28637651 (Recurrent):
+    rho=0.246, p(two-sided)=0.182265747211754, q=0.48118157263903, bins=31
+  chr16:28471892-28637651 (Recurrent):
+    rho=0.190, p(two-sided)=0.306154807681112, q=0.612309615362223, bins=31
+  chr17:16823490-18384190 (Single-event):
+    rho=-0.378, p(two-sided)=0.0136941273852229, q=0.0821647643113372, bins=42
+  chr17:16823490-18384190 (Single-event):
+    rho=-0.502, p(two-sided)=0.000711143233335707, q=0.0156451511333856, bins=42
+  chr17:16823490-18384190 (Single-event):
+    rho=0.422, p(two-sided)=0.00541453392800131, q=0.0446699049060108, bins=42
+  chr17:45585159-46292045 (Single-event):
+    rho=0.108, p(two-sided)=0.459438676364779, q=0.705184945118033, bins=49
+  chr17:45585159-46292045 (Single-event):
+    rho=0.328, p(two-sided)=0.0212925755058234, q=0.100379284527453, bins=49
+  chr17:45585159-46292045 (Single-event):
+    rho=0.126, p(two-sided)=0.388625349942544, q=0.67498087095284, bins=49
+  chr2:91832040-92012663 (Recurrent):
+    rho=0.381, p(two-sided)=0.00979778205382389, q=0.0696995546639288, bins=45
+  chr2:91832040-92012663 (Recurrent):
+    rho=0.422, p(two-sided)=0.00385206548517487, q=0.0389056978834163, bins=45
+  chr2:91832040-92012663 (Recurrent):
+    rho=-0.048, p(two-sided)=0.752443256789048, q=0.908774183046825, bins=45
+  chr2:95800191-96024403 (Recurrent):
+    rho=-0.029, p(two-sided)=0.86258112018841, q=0.9137235980986, bins=37
+  chr2:95800191-96024403 (Recurrent):
+    rho=-0.048, p(two-sided)=0.766793817565099, q=0.908774183046825, bins=40
+  chr2:95800191-96024403 (Recurrent):
+    rho=-0.444, p(two-sided)=0.00412636189672597, q=0.0389056978834163, bins=40
+  chr2:130138212-131200602 (Single-event):
+    rho=0.340, p(two-sided)=0.0157552064743162, q=0.0866536356087393, bins=50
+  chr2:130138212-131200602 (Single-event):
+    rho=0.329, p(two-sided)=0.0195858314401358, q=0.0994357596191512, bins=50
+  chr2:130138212-131200602 (Single-event):
+    rho=-0.275, p(two-sided)=0.0530817090458888, q=0.190744237083307, bins=50
+  chr2:130138212-131530534 (Single-event):
+    rho=0.306, p(two-sided)=0.0305035595032682, q=0.1199219747609, bins=50
+  chr2:130138212-131530534 (Single-event):
+    rho=0.313, p(two-sided)=0.0270622378097977, q=0.11907384636311, bins=50
+  chr2:130138212-131530534 (Single-event):
+    rho=0.262, p(two-sided)=0.0663704969349968, q=0.219022639885489, bins=50
+  chr3:195749463-195980207 (Recurrent):
+    rho=0.031, p(two-sided)=0.832070148612193, q=0.9137235980986, bins=48
+  chr3:195749463-195980207 (Recurrent):
+    rho=0.026, p(two-sided)=0.860757045806475, q=0.9137235980986, bins=48
+  chr3:195749463-195980207 (Recurrent):
+    rho=-0.039, p(two-sided)=0.792000112953159, q=0.9137235980986, bins=48
+  chr6:167209001-167357782 (Single-event):
+    rho=-0.158, p(two-sided)=0.350642118616878, q=0.661210852248971, bins=37
+  chr6:167209001-167357782 (Single-event):
+    rho=-0.147, p(two-sided)=0.386092362239459, q=0.67498087095284, bins=37
+  chr6:167209001-167357782 (Single-event):
+    rho=-0.130, p(two-sided)=0.444276826377444, q=0.705184945118033, bins=37
+  chr7:5989046-6735643 (Recurrent):
+    rho=0.160, p(two-sided)=0.267468204682572, q=0.608720741691371, bins=50
+  chr7:5989046-6735643 (Recurrent):
+    rho=0.043, p(two-sided)=0.765448458884893, q=0.908774183046825, bins=50
+  chr7:5989046-6735643 (Recurrent):
+    rho=-0.441, p(two-sided)=0.00134610805726845, q=0.0222107829449295, bins=50
+  chr7:60911891-61578023 (Recurrent):
+    rho=0.226, p(two-sided)=0.178283509000257, q=0.48118157263903, bins=37
+  chr7:60911891-61578023 (Recurrent):
+    rho=0.131, p(two-sided)=0.439253036286709, q=0.705184945118033, bins=37
+  chr7:60911891-61578023 (Recurrent):
+    rho=4.505e-03, p(two-sided)=0.978890839458511, q=0.978890839458511, bins=37
+  chr7:65219157-65531823 (Recurrent):
+    rho=0.024, p(two-sided)=0.873115722428036, q=0.9137235980986, bins=47
+  chr7:65219157-65531823 (Recurrent):
+    rho=0.032, p(two-sided)=0.82955218580991, q=0.9137235980986, bins=47
+  chr7:65219157-65531823 (Recurrent):
+    rho=0.111, p(two-sided)=0.457577150190108, q=0.705184945118033, bins=47
+  chr7:73113989-74799029 (Recurrent):
+    rho=0.153, p(two-sided)=0.602150946993499, q=0.883154722257131, bins=14
+  chr7:73113989-74799029 (Recurrent):
+    rho=0.171, p(two-sided)=0.558114530685507, q=0.837171796028261, bins=14
+  chr7:73113989-74799029 (Recurrent):
+    rho=-0.042, p(two-sided)=0.886035004216825, q=0.9137235980986, bins=14
+  chr7:74869950-75058098 (Recurrent):
+    rho=-0.171, p(two-sided)=0.33263115290762, q=0.645695767408909, bins=34
+  chr7:74869950-75058098 (Recurrent):
+    rho=-0.160, p(two-sided)=0.367349549540859, q=0.673474174158241, bins=34
+  chr7:74869950-75058098 (Recurrent):
+    rho=0.332, p(two-sided)=0.0549112197664065, q=0.190744237083307, bins=34
+  chrX:153149748-153250226 (Recurrent):
+    rho=0.087, p(two-sided)=0.679498024677208, q=0.908774183046825, bins=25
+  chrX:153149748-153250226 (Recurrent):
+    rho=0.217, p(two-sided)=0.297618255146521, q=0.612309615362223, bins=25
+  chrX:153149748-153250226 (Recurrent):
+    rho=0.045, p(two-sided)=0.832293278759298, q=0.9137235980986, bins=25
+
+LINEAR MODEL
+Orientation × recurrence linear models (replicated strict logic):
+  Model definitions (mirroring stats/inv_dir_recur_model.py):
+    [Model A] Outcome Δlogπ = log(π_inverted+ε) − log(π_direct+ε); predictor is a Recurrent indicator (Single-event baseline); HC3 robust SEs; contrasts report single-event, recurrent, interaction, and pooled inversion effects.
+    [Model B] Rows duplicated per orientation with outcome log(π+ε); OLS with design log_pi ~ Inverted + Inverted:Recurrent + C(region_id); cluster-robust by region_id; recurrence main effect absorbed by fixed effects; contrasts compare orientation within recurrence groups and their interaction.
+    [Model C] Outcome Δlogπ as in Model A with predictors Recurrent + z-scored covariates ln1p(Number_recurrent_events), ln(Size_kbp), Inverted_AF (raw z), ln(Formation_rate_per_generation); HC3 robust SEs; rows with missing covariates are dropped and effects are per +1 SD.
+  Detection floor applied before logs: ε = 6.500000e-06.
+  [Model A] Δ-logπ = log(π_inv+ε) – log(π_dir+ε) ~ 1 + Recurrent (HC3 SEs). No weights or covariates; effects reported for single-event, recurrent, interaction, and pooled Δ-logπ.
+    Single-event: Inverted vs Direct: fold-change = 0.263 (95% CI 0.136–0.509), p = 7.416e-05.
+    Recurrent: Inverted vs Direct: fold-change = 1.090 (95% CI 0.902–1.317), p = 0.372.
+    Interaction (difference between those two): fold-change = 4.149 (95% CI 2.086–8.254), p = 5.015e-05.
+    Overall inversion effect (pooled Δ-logπ): fold-change = 0.548 (95% CI 0.376–0.796), p = 1.631e-03.
+  [Model B] log(π+ε) ~ Inverted + Inverted:Recurrent + C(region_id); cluster-robust by region_id. Recurrence main effect absorbed by fixed effects; contrasts give single-event, recurrent, and interaction pairs.
+    Single-event: Inverted vs Direct: fold-change = 0.263 (95% CI 0.104–0.661), p = 4.514e-03.
+    Recurrent: Inverted vs Direct: fold-change = 1.090 (95% CI 0.836–1.421), p = 0.524.
+    Interaction (difference between those two): fold-change = 4.149 (95% CI 1.589–10.836), p = 3.666e-03.
+  [Model C] Δ-logπ ~ 1 + Recurrent + z-scored covariates from inv_properties.tsv (Number_recurrent_events ln1p, Size_.kbp. ln, Inverted_AF, Formation_rate_per_generation ln). HC3 SEs; rows require complete covariates with missingness dummies excluded.
+    Covariates included in fit: Covariate: Number_recurrent_events (ln1p, z), Covariate: Size_.kbp. (ln, z), Covariate: Inverted_AF (z), Covariate: Formation_rate_per_generation (ln, z)
+    Single-event: Inverted vs Direct (adjusted): fold-change = 0.355 (95% CI 0.210–0.598), p = 1.011e-04.
+    Recurrent: Inverted vs Direct (adjusted): fold-change = 0.353 (95% CI 0.166–0.753), p = 7.071e-03.
+    Interaction (difference between those two): fold-change = 0.996 (95% CI 0.403–2.464), p = 0.993.
+    Covariate: Number_recurrent_events (ln1p, z): fold-change = 0.479 (95% CI 0.203–1.127), p = 0.092.
+    Covariate: Size_.kbp. (ln, z): fold-change = 1.303 (95% CI 0.870–1.952), p = 0.200.
+    Covariate: Inverted_AF (z): fold-change = 1.758 (95% CI 1.031–2.996), p = 0.038.
+    Covariate: Formation_rate_per_generation (ln, z): fold-change = 3.618 (95% CI 1.145–11.429), p = 0.028.
+  [Permutation] Model A interaction (n=10000):
+    Observed Δ(mean log-ratio) = 1.4230, p = 1.9998e-04.
+
+CDS CONSERVATION
+CDS conservation GLM (proportion of identical CDS pairs):
+  Model definition: Binomial GLM with logit link and frequency weights = n_pairs, cluster-robust by inversion; formula prop ~ C(consensus) * C(phy_group) + log_m + log_L + log_k (log of n_sites, inversion length, and n_sequences).
+  Categories use Single/Recurrent × Direct/Inverted encoding; estimated marginal means are standardized with equal inversion weight and covariates set to their weighted means before pairwise contrasts.
+  Source: loaded from cds_identical_proportions.tsv.
+  Input summary: n_rows = 422, n_inversions = 26.
+  Unadjusted model: logLik = -2.144e+05, null deviance = 2.377e+05, residual deviance = 2.362e+05, pseudo-R² = 6.205e-03.
+  Unadjusted model: standardized marginal means (equal inversion weight):
+    Single/Inverted: p̂ = 98.8860% (95% CI 91.0527–99.8710%).
+    Recurrent/Inverted: p̂ = 79.5470% (95% CI 72.2340–85.3252%).
+    Single/Direct: p̂ = 76.8741% (95% CI 72.5442–80.7028%).
+    Recurrent/Direct: p̂ = 76.3153% (95% CI 66.5520–83.9174%).
+  Unadjusted model: pairwise contrasts (BH-FDR):
+    Recurrent/Direct vs Single/Inverted: Δlogit = -3.316, Δp = -22.6%, p = 3.400e-03, BH q = 0.010.
+    Single/Direct vs Single/Inverted: Δlogit = -3.285, Δp = -22.0%, p = 3.006e-03, BH q = 0.010.
+    Recurrent/Inverted vs Single/Inverted: Δlogit = -3.128, Δp = -19.3%, p = 5.388e-03, BH q = 0.011.
+    Recurrent/Direct vs Recurrent/Inverted: Δlogit = -0.188, Δp = -3.2%, p = 0.444, BH q = 0.608.
+    Recurrent/Inverted vs Single/Direct: Δlogit = 0.157, Δp = 2.7%, p = 0.506, BH q = 0.608.
+    Recurrent/Direct vs Single/Direct: Δlogit = -0.031, Δp = -0.6%, p = 0.909, BH q = 0.909.
+  Adjusted model: logLik = -2.008e+05, null deviance = 2.377e+05, residual deviance = 2.091e+05, pseudo-R² = 0.121.
+  Adjusted model: standardized marginal means (equal inversion weight):
+    Single/Inverted: p̂ = 99.0044% (95% CI 90.1197–99.9078%).
+    Single/Direct: p̂ = 80.3418% (95% CI 56.8228–92.6964%).
+    Recurrent/Direct: p̂ = 77.1761% (95% CI 55.4729–90.1746%).
+    Recurrent/Inverted: p̂ = 72.5739% (95% CI 53.2933–85.9881%).
+  Adjusted model: pairwise contrasts (BH-FDR):
+    Recurrent/Direct vs Single/Inverted: Δlogit = -3.381, Δp = -21.8%, p = 4.935e-03, BH q = 0.015.
+    Recurrent/Inverted vs Single/Inverted: Δlogit = -3.626, Δp = -26.4%, p = 2.529e-03, BH q = 0.015.
+    Single/Direct vs Single/Inverted: Δlogit = -3.192, Δp = -18.7%, p = 7.776e-03, BH q = 0.016.
+    Recurrent/Direct vs Recurrent/Inverted: Δlogit = 0.245, Δp = 4.6%, p = 0.134, BH q = 0.160.
+    Recurrent/Inverted vs Single/Direct: Δlogit = -0.435, Δp = -7.8%, p = 0.123, BH q = 0.160.
+    Recurrent/Direct vs Single/Direct: Δlogit = -0.190, Δp = -3.2%, p = 0.508, BH q = 0.508.
+
+DIFFERENTIATION
+Differentiation between orientations (Hudson's FST):
+  Single-event: median FST = 0.257 (n = 27).
+  Recurrent: median FST = 0.085 (n = 32).
+  Mann–Whitney U test (single-event vs recurrent): U = 617.000, p = 4.999e-03.
+  Highly differentiated loci: 25 with FST > 0.2 and 10 with FST > 0.5.
+
+BREAKPOINT FRF
+Breakpoint enrichment (Flat–Ramp–Flat Model):
+  [Descriptive Levels] Raw FST averages (Unweighted):
+    Single-event (n=14): Edge=0.501, Middle=0.458.
+    Recurrent (n=25): Edge=0.127, Middle=0.167.
+
+  [Unweighted Delta Analysis]
+    Single-event mean delta: 0.043.
+    Recurrent mean delta: -0.040.
+    Diff-of-diffs (Single - Recurrent): 0.083.
+    Energy Test p-value (Single > Recurrent): 6.800e-03.
+
+  [Precision-Weighted Meta-Analysis]
+    Weighted Median Delta: Single=0.176, Recurrent=-0.028, Diff=0.205.
+    Median P-value (Two-sided): 1.3500e-06.
+    Weighted Mean Delta:   Single=0.067, Recurrent=-0.024, Diff=0.091.
+    Mean P-value (Two-sided):   0.0113.
+
+IMPUTATION
+Imputation performance summary:
+  Models evaluated: 158; models with r² > 0.3 and BH p < 0.05: 21.
+
+PHEWAS SCALE
+PheWAS scale summary:
+  Unique phenotypes tested: 1090.
+  Case counts span 1002 to 137692; controls span 182133–368254.
+  Phenotype coverage per inversion (top 5): chr10-79542902-INV-674513: 1090, chr12-46897663-INV-16289: 1090, chr17-45585160-INV-706887: 1090, chr4-33098029-INV-7075: 1090, chr6-141867315-INV-29159: 1090; ...
+  Inversions with ≥1 BH-significant phenotype: 5 of 7.
+
+KEY ASSOCIATIONS
+Selected inversion–phenotype associations (logistic regression with LRT p-values):
+  Source table: phewas_results.tsv (MAIN IMPUTED).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Melanocytic_nevi: OR = 0.898 (95% CI 0.870–0.928), BH-adjusted p ≈ 3.978e-07 (raw p = 5.397e-11).
+    Interaction (Ancestry × Dosage): p = 5.812e-05.
+    [AFR] p = 0.424, OR = 1.111 (95% CI 0.857–1.408).
+    [AMR] p = 0.589, OR = 0.963 (95% CI 0.854–1.094).
+    [EAS] p = 0.046, OR = 2.920 (95% CI 1.020–4.726).
+    [EUR] p = 1.993e-11, OR = 0.892.
+    [MID] p = 0.678, OR = 1.128 (95% CI 0.662–1.678).
+    [SAS] p = 0.020, OR = 1.958 (95% CI 1.115–2.692).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Benign_neoplasm_of_the_skin: OR = 0.919 (95% CI 0.895–0.945), BH-adjusted p ≈ 3.486e-06 (raw p = 9.458e-10).
+    Interaction (Ancestry × Dosage): p = 0.010.
+    [AFR] p = 0.517, OR = 0.943 (95% CI 0.792–1.122).
+    [AMR] p = 0.954, OR = 1.003 (95% CI 0.917–1.093).
+    [EAS] p = 0.287, OR = 1.641 (95% CI 0.652–3.322).
+    [EUR] p = 7.312e-10, OR = 0.914.
+    [MID] p = 0.679, OR = 1.109 (95% CI 0.701–1.586).
+    [SAS] p = 0.115, OR = 1.421 (95% CI 0.918–2.023).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Conjunctivitis: OR = 1.147 (95% CI 1.091–1.205), BH-adjusted p ≈ 2.376e-04 (raw p = 9.670e-08).
+    Interaction (Ancestry × Dosage): p = 0.813.
+    [AFR] p = 0.727, OR = 1.045 (95% CI 0.814–1.319).
+    [AMR] p = 0.239, OR = 1.090 (95% CI 0.945–1.227).
+    [EAS] p = 0.584, OR = 1.421 (95% CI 0.359–3.780).
+    [EUR] p = 9.713e-07, OR = 1.150.
+    [SAS] p = 0.422, OR = 1.171 (95% CI 0.804–1.489).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Scar_conditions_and_fibrosis_of_skin: OR = 0.876 (95% CI 0.832–0.922), BH-adjusted p ≈ 7.396e-04 (raw p = 4.014e-07).
+    Interaction (Ancestry × Dosage): p = 0.933.
+    [AFR] p = 0.448, OR = 0.899 (95% CI 0.681–1.178).
+    [AMR] p = 0.558, OR = 0.947 (95% CI 0.802–1.125).
+    [EAS] p = 0.540, OR = 0.527 (95% CI 0.048–3.267).
+    [EUR] p = 1.406e-06, OR = 0.874.
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Inflammation_of_the_eye: OR = 1.118 (95% CI 1.070–1.169), BH-adjusted p ≈ 1.049e-03 (raw p = 7.116e-07).
+    Interaction (Ancestry × Dosage): p = 0.779.
+    [AFR] p = 0.394, OR = 1.097 (95% CI 0.885–1.338).
+    [AMR] p = 0.216, OR = 1.081 (95% CI 0.956–1.197).
+    [EAS] p = 0.941, OR = 0.956 (95% CI 0.246–2.699).
+    [EUR] p = 1.545e-05, OR = 1.115 (95% CI 1.072–1.121).
+    [MID] p = 0.746, OR = 0.909 (95% CI 0.525–1.486).
+    [SAS] p = 0.125, OR = 1.281 (95% CI 0.935–1.479).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Skin_changes_due_to_solar_radiation: OR = 0.922 (95% CI 0.891–0.953), BH-adjusted p ≈ 2.511e-03 (raw p = 2.044e-06).
+    Interaction (Ancestry × Dosage): p = 0.652.
+    [AFR] p = 0.221, OR = 1.282 (95% CI 0.859–1.792).
+    [AMR] p = 0.029, OR = 0.836 (95% CI 0.744–0.982).
+    [EAS] p = 0.759, OR = 1.905 (95% CI 0.171–10.102).
+    [EUR] p = 1.542e-05, OR = 0.926 (95% CI 0.923–0.952).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Hypertrophic_conditions_of_skin: OR = 0.911 (95% CI 0.911–0.936), BH-adjusted p ≈ 2.675e-03 (raw p = 2.622e-06).
+    Interaction (Ancestry × Dosage): p = 0.506.
+    [AFR] p = 0.744, OR = 0.969 (95% CI 0.804–1.165).
+    [AMR] p = 0.919, OR = 0.993 (95% CI 0.884–1.114).
+    [EAS] p = 0.905, OR = 1.084 (95% CI 0.263–3.241).
+    [EUR] p = 8.426e-06, OR = 0.909 (95% CI 0.905–0.938).
+    [SAS] p = 0.107, OR = 0.603 (95% CI 0.331–1.111).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Acne: OR = 1.158 (95% CI 1.090–1.231), BH-adjusted p ≈ 2.675e-03 (raw p = 2.903e-06).
+    Interaction (Ancestry × Dosage): p = 0.840.
+    [AFR] p = 0.698, OR = 0.939 (95% CI 0.679–1.274).
+    [AMR] p = 0.318, OR = 1.097 (95% CI 0.915–1.274).
+    [EAS] p = 0.922, OR = 1.065 (95% CI 0.263–3.040).
+    [EUR] p = 8.218e-06, OR = 1.170.
+    [SAS] p = 0.463, OR = 1.137 (95% CI 0.816–1.424).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Rosacea: OR = 0.884 (95% CI 0.880–0.918), BH-adjusted p ≈ 3.026e-03 (raw p = 3.694e-06).
+    Interaction (Ancestry × Dosage): p = 0.698.
+    [AFR] p = 0.503, OR = 1.183 (95% CI 0.717–1.810).
+    [AMR] p = 0.315, OR = 0.903 (95% CI 0.759–1.095).
+    [EUR] p = 1.052e-05, OR = 0.884 (95% CI 0.876–0.923).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Lump_or_mass_in_breast_or_nonspecific_abnormal_breast_exam: OR = 0.930 (95% CI 0.929–0.951), BH-adjusted p ≈ 3.290e-03 (raw p = 4.464e-06).
+    Interaction (Ancestry × Dosage): p = 0.025.
+    [AFR] p = 0.875, OR = 1.010 (95% CI 0.893–1.140).
+    [AMR] p = 0.325, OR = 0.958 (95% CI 0.892–1.042).
+    [EAS] p = 0.367, OR = 1.568 (95% CI 0.585–3.523).
+    [EUR] p = 1.137e-05, OR = 0.925 (95% CI 0.924–0.949).
+    [MID] p = 0.924, OR = 1.026 (95% CI 0.631–1.592).
+    [SAS] p = 0.178, OR = 1.380 (95% CI 0.863–2.066).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Morbid_obesity: OR = 1.078 (95% CI 1.043–1.113), BH-adjusted p ≈ 4.536e-03 (raw p = 6.769e-06).
+    Interaction (Ancestry × Dosage): p = 2.982e-03.
+    [AFR] p = 4.445e-04, OR = 1.226 (95% CI 1.096–1.349).
+    [AMR] p = 0.102, OR = 1.070 (95% CI 0.987–1.132).
+    [EAS] p = 0.734, OR = 0.829 (95% CI 0.206–2.629).
+    [EUR] p = 5.111e-04, OR = 1.069 (95% CI 1.033–1.079).
+    [SAS] p = 0.365, OR = 1.347 (95% CI 0.703–2.258).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Skin_changes_due_to_chronic_exposure_to_nonionizing_radiation: OR = 0.924 (95% CI 0.923–0.948), BH-adjusted p ≈ 4.740e-03 (raw p = 7.716e-06).
+    Interaction (Ancestry × Dosage): p = 0.622.
+    [AFR] p = 0.156, OR = 1.439 (95% CI 0.867–2.128).
+    [AMR] p = 0.059, OR = 0.845 (95% CI 0.740–1.006).
+    [EAS] p = 0.649, OR = 2.396 (95% CI 0.202–13.133).
+    [EUR] p = 3.628e-05, OR = 0.928 (95% CI 0.922–0.956).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Abnormal_mammogram: OR = 0.906 (95% CI 0.898–0.940), BH-adjusted p ≈ 9.094e-03 (raw p = 1.604e-05).
+    Interaction (Ancestry × Dosage): p = 0.023.
+    [AFR] p = 0.788, OR = 1.025 (95% CI 0.859–1.215).
+    [AMR] p = 0.980, OR = 0.998 (95% CI 0.883–1.124).
+    [EAS] p = 0.668, OR = 1.355 (95% CI 0.318–4.012).
+    [EUR] p = 5.624e-06, OR = 0.891 (95% CI 0.888–0.924).
+    [SAS] p = 0.099, OR = 1.806 (95% CI 0.893–3.060).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Other_skin_and_subcutaneous_disorders: OR = 0.938 (95% CI 0.934–0.961), BH-adjusted p ≈ 0.012 (raw p = 2.217e-05).
+    Interaction (Ancestry × Dosage): p = 0.016.
+    [AFR] p = 0.413, OR = 0.941 (95% CI 0.816–1.086).
+    [AMR] p = 0.519, OR = 0.969 (95% CI 0.892–1.061).
+    [EAS] p = 0.998, OR = 0.999 (95% CI 0.295–2.723).
+    [EUR] p = 8.027e-05, OR = 0.938 (95% CI 0.931–0.964).
+    [MID] p = 0.777, OR = 0.925 (95% CI 0.564–1.474).
+    [SAS] p = 4.176e-03, OR = 1.958 (95% CI 1.244–2.552).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Other_follicular_disorders: OR = 0.942 (95% CI 0.937–0.964), BH-adjusted p ≈ 0.017 (raw p = 3.494e-05).
+    Interaction (Ancestry × Dosage): p = 0.581.
+    [AFR] p = 0.379, OR = 0.946 (95% CI 0.837–1.070).
+    [AMR] p = 0.140, OR = 0.938 (95% CI 0.879–1.020).
+    [EAS] p = 0.775, OR = 1.142 (95% CI 0.447–2.522).
+    [EUR] p = 6.683e-04, OR = 0.947 (95% CI 0.936–0.975).
+    [MID] p = 0.634, OR = 1.105 (95% CI 0.749–1.502).
+    [SAS] p = 0.924, OR = 1.018 (95% CI 0.701–1.452).
+  [MAIN IMPUTED] chr8:7,301,024-12,598,379 vs Multinodular_goiter: OR = 0.835 (95% CI 0.767–0.910), BH-adjusted p ≈ 0.017 (raw p = 3.600e-05).
+    Interaction (Ancestry × Dosage): p = 3.448e-03.
+    [AFR] p = 0.478, OR = 1.079.
+    [AMR] p = 0.139, OR = 0.840.
+    [EAS] p = 4.998e-04, OR = 0.161 (95% CI 0.124–0.215).
+    [EUR] p = 1.741e-05, OR = 0.796.
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Benign_sarcoma_related_cancers: OR = 0.936 (95% CI 0.930–0.961), BH-adjusted p ≈ 0.017 (raw p = 3.906e-05).
+    Interaction (Ancestry × Dosage): p = 1.015e-03.
+    [AFR] p = 0.963, OR = 1.004 (95% CI 0.857–1.172).
+    [AMR] p = 0.470, OR = 1.041 (95% CI 0.937–1.136).
+    [EAS] p = 0.734, OR = 1.256 (95% CI 0.315–3.620).
+    [EUR] p = 1.558e-05, OR = 0.928 (95% CI 0.925–0.953).
+    [MID] p = 0.806, OR = 1.074 (95% CI 0.634–1.645).
+    [SAS] p = 1.727e-03, OR = 2.378 (95% CI 1.400–3.065).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Disorder_of_nervous_system: OR = 1.168 (95% CI 1.095–1.184), BH-adjusted p ≈ 0.021 (raw p = 5.102e-05).
+    Interaction (Ancestry × Dosage): p = 0.689.
+    [AFR] p = 0.368, OR = 1.178 (95% CI 0.820–1.619).
+    [AMR] p = 0.026, OR = 1.277 (95% CI 1.031–1.464).
+    [EAS] p = 4.998e-04, OR = 0.687 (95% CI 1.120e-03–8.562).
+    [EUR] p = 1.345e-03, OR = 1.146 (95% CI 1.059–1.184).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Aphagia_and_dysphagia: OR = 0.928 (95% CI 0.919–0.958), BH-adjusted p ≈ 0.021 (raw p = 5.353e-05).
+    Interaction (Ancestry × Dosage): p = 0.031.
+    [AFR] p = 0.185, OR = 0.900 (95% CI 0.773–1.051).
+    [AMR] p = 0.200, OR = 1.071 (95% CI 0.965–1.156).
+    [EAS] p = 0.043, OR = 0.135 (95% CI 0.020–0.942).
+    [EUR] p = 6.756e-06, OR = 0.913 (95% CI 0.910–0.940).
+    [SAS] p = 0.115, OR = 1.619 (95% CI 0.887–2.539).
+  [MAIN IMPUTED] chr8:7,301,024-12,598,379 vs Alopecia_Areata: OR = 1.656 (95% CI 1.289–2.127), BH-adjusted p ≈ 0.028 (raw p = 7.697e-05).
+    Interaction (Ancestry × Dosage): p = 0.327.
+    [AFR] p = 0.692, OR = 1.121.
+    [AMR] p = 0.058, OR = 1.646 (95% CI 1.097–NA).
+    [EUR] p = 4.667e-04, OR = 1.872.
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Epidermal_thickening: OR = 1.111 (95% CI 1.060–1.128), BH-adjusted p ≈ 0.032 (raw p = 9.117e-05).
+    Interaction (Ancestry × Dosage): p = 0.800.
+    [AFR] p = 0.545, OR = 1.077 (95% CI 0.845–1.351).
+    [AMR] p = 0.049, OR = 1.179 (95% CI 1.001–1.324).
+    [EAS] p = 0.789, OR = 1.239 (95% CI 0.199–4.163).
+    [EUR] p = 1.769e-03, OR = 1.097 (95% CI 1.038–1.127).
+    [SAS] p = 0.039, OR = 1.463 (95% CI 1.020–1.588).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Abnormal_cytological_findings_in_specimens_from_genital_organs: OR = 0.912 (95% CI 0.898–0.951), BH-adjusted p ≈ 0.036 (raw p = 1.070e-04).
+    Interaction (Ancestry × Dosage): p = 0.072.
+    [AFR] p = 0.340, OR = 0.923 (95% CI 0.784–1.087).
+    [AMR] p = 0.516, OR = 0.961 (95% CI 0.864–1.078).
+    [EAS] p = 0.273, OR = 0.420 (95% CI 0.076–1.842).
+    [EUR] p = 1.573e-03, OR = 0.917 (95% CI 0.894–0.965).
+    [SAS] p = 0.636, OR = 1.177 (95% CI 0.583–2.228).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Abnormal_Papanicolaou_smear: OR = 0.898 (95% CI 0.881–0.943), BH-adjusted p ≈ 0.036 (raw p = 1.120e-04).
+    Interaction (Ancestry × Dosage): p = 0.169.
+    [AFR] p = 0.137, OR = 0.866 (95% CI 0.719–1.046).
+    [AMR] p = 0.225, OR = 0.918 (95% CI 0.817–1.052).
+    [EAS] p = 0.547, OR = 0.580 (95% CI 0.082–2.789).
+    [EUR] p = 5.103e-03, OR = 0.914 (95% CI 0.882–0.972).
+  [MAIN IMPUTED] chr10:79,542,901-80,217,413 vs High_risk_human_papillomavirus_HPV_DNA_test_positive: OR = 1.240 (95% CI 1.113–1.382), BH-adjusted p ≈ 0.036 (raw p = 1.187e-04).
+    Interaction (Ancestry × Dosage): p = 0.077.
+    [AFR] p = 0.469, OR = 1.138 (95% CI 0.810–1.476).
+    [AMR] p = 3.554e-05, OR = 1.475.
+    [EUR] p = 0.115, OR = 1.131 (95% CI 0.970–1.252).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Flat_foot_pes_planus: OR = 1.198 (95% CI 1.101–1.228), BH-adjusted p ≈ 0.042 (raw p = 1.548e-04).
+    Interaction (Ancestry × Dosage): p = 0.136.
+    [AFR] p = 0.218, OR = 1.251 (95% CI 0.872–1.712).
+    [AMR] p = 0.081, OR = 1.293 (95% CI 0.969–1.570).
+    [EUR] p = 8.676e-04, OR = 1.195 (95% CI 1.083–1.238).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Mild_cognitive_impairment: OR = 0.857 (95% CI 0.826–0.922), BH-adjusted p ≈ 0.042 (raw p = 1.706e-04).
+    Interaction (Ancestry × Dosage): p = 0.013.
+    [AFR] p = 0.288, OR = 1.216 (95% CI 0.846–1.676).
+    [AMR] p = 0.026, OR = 0.735 (95% CI 0.589–0.963).
+    [EUR] p = 3.848e-04, OR = 0.854 (95% CI 0.818–0.926).
+  [MAIN IMPUTED] chr8:7,301,024-12,598,379 vs Viral_infections: OR = 1.061 (95% CI 1.029–1.094), BH-adjusted p ≈ 0.042 (raw p = 1.712e-04).
+    Interaction (Ancestry × Dosage): p = 0.297.
+    [AFR] p = 0.083, OR = 1.070.
+    [AMR] p = 0.037, OR = 1.077.
+    [EAS] p = 0.726, OR = 1.060 (95% CI 0.922–1.089).
+    [EUR] p = 9.073e-03, OR = 1.054.
+    [MID] p = 0.018, OR = 1.926.
+    [SAS] p = 0.407, OR = 1.124.
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Migraine: OR = 1.086 (95% CI 1.044–1.103), BH-adjusted p ≈ 0.042 (raw p = 1.725e-04).
+    Interaction (Ancestry × Dosage): p = 0.021.
+    [AFR] p = 0.540, OR = 1.072 (95% CI 0.857–1.321).
+    [AMR] p = 0.678, OR = 1.025 (95% CI 0.915–1.139).
+    [EAS] p = 0.054, OR = 2.911 (95% CI 0.980–5.915).
+    [EUR] p = 2.421e-04, OR = 1.094 (95% CI 1.047–1.112).
+    [MID] p = 0.870, OR = 0.950 (95% CI 0.527–1.578).
+    [SAS] p = 0.906, OR = 1.023 (95% CI 0.714–1.382).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Diastolic_heart_failure: OR = 1.116 (95% CI 1.061–1.127), BH-adjusted p ≈ 0.042 (raw p = 1.736e-04).
+    Interaction (Ancestry × Dosage): p = 0.398.
+    [AFR] p = 0.242, OR = 1.129 (95% CI 0.921–1.365).
+    [AMR] p = 0.012, OR = 1.232 (95% CI 1.048–1.320).
+    [EUR] p = 4.727e-03, OR = 1.097 (95% CI 1.030–1.127).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Hearing_impairment: OR = 1.082 (95% CI 1.042–1.098), BH-adjusted p ≈ 0.042 (raw p = 1.837e-04).
+    Interaction (Ancestry × Dosage): p = 0.984.
+    [AFR] p = 0.894, OR = 0.983 (95% CI 0.763–1.253).
+    [AMR] p = 0.161, OR = 1.104 (95% CI 0.961–1.234).
+    [EAS] p = 0.477, OR = 1.697 (95% CI 0.344–5.155).
+    [EUR] p = 7.009e-04, OR = 1.080 (95% CI 1.036–1.101).
+    [MID] p = 0.822, OR = 0.939 (95% CI 0.563–1.504).
+    [SAS] p = 0.981, OR = 0.996 (95% CI 0.712–1.346).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Urinary_incontinence_and_enuresis: OR = 1.097 (95% CI 1.050–1.116), BH-adjusted p ≈ 0.042 (raw p = 1.860e-04).
+    Interaction (Ancestry × Dosage): p = 0.897.
+    [AFR] p = 0.694, OR = 1.051 (95% CI 0.821–1.325).
+    [AMR] p = 0.042, OR = 1.157 (95% CI 1.005–1.281).
+    [EAS] p = 0.266, OR = 2.366 (95% CI 0.472–6.570).
+    [EUR] p = 1.600e-03, OR = 1.090 (95% CI 1.035–1.118).
+    [SAS] p = 0.677, OR = 0.899 (95% CI 0.574–1.377).
+  [MAIN IMPUTED] chr8:7,301,024-12,598,379 vs Uninodular_goiter_single_thyroid_nodule: OR = 0.872 (95% CI 0.811–0.937), BH-adjusted p ≈ 0.042 (raw p = 1.877e-04).
+    Interaction (Ancestry × Dosage): p = 0.014.
+    [AFR] p = 0.944, OR = 0.993 (95% CI 0.961–1.038).
+    [AMR] p = 0.041, OR = 0.820.
+    [EAS] p = 2.145e-04, OR = 0.207.
+    [EUR] p = 2.389e-03, OR = 0.874.
+    [SAS] p = 0.481, OR = 0.770 (95% CI 0.633–0.952).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Lump_or_mass_in_breast_or_nonspecific_abnormal_breast_exam: OR = 1.086 (95% CI 1.044–1.104), BH-adjusted p ≈ 0.042 (raw p = 1.909e-04).
+    Interaction (Ancestry × Dosage): p = 0.078.
+    [AFR] p = 0.627, OR = 1.053 (95% CI 0.856–1.282).
+    [AMR] p = 0.841, OR = 1.013 (95% CI 0.898–1.135).
+    [EAS] p = 0.515, OR = 1.528 (95% CI 0.395–4.508).
+    [EUR] p = 8.417e-05, OR = 1.102 (95% CI 1.056–1.117).
+    [MID] p = 0.696, OR = 0.899 (95% CI 0.563–1.445).
+    [SAS] p = 0.133, OR = 0.762 (95% CI 0.593–1.081).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Goiter: OR = 0.927 (95% CI 0.914–0.961), BH-adjusted p ≈ 0.042 (raw p = 2.052e-04).
+    Interaction (Ancestry × Dosage): p = 0.079.
+    [AFR] p = 0.508, OR = 0.947 (95% CI 0.806–1.112).
+    [AMR] p = 0.019, OR = 0.867 (95% CI 0.798–0.977).
+    [EAS] p = 0.088, OR = 0.230 (95% CI 0.037–1.221).
+    [EUR] p = 6.406e-03, OR = 0.940 (95% CI 0.917–0.982).
+    [MID] p = 0.187, OR = 0.641 (95% CI 0.377–1.219).
+    [SAS] p = 0.168, OR = 1.466 (95% CI 0.849–2.267).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Sensorineural_hearing_loss: OR = 1.096 (95% CI 1.049–1.115), BH-adjusted p ≈ 0.042 (raw p = 2.066e-04).
+    Interaction (Ancestry × Dosage): p = 0.956.
+    [AFR] p = 0.940, OR = 1.012 (95% CI 0.742–1.353).
+    [AMR] p = 0.164, OR = 1.135 (95% CI 0.950–1.305).
+    [EAS] p = 0.274, OR = 2.701 (95% CI 0.397–8.809).
+    [EUR] p = 1.039e-03, OR = 1.090 (95% CI 1.038–1.115).
+    [SAS] p = 0.970, OR = 1.009 (95% CI 0.645–1.476).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Rosacea: OR = 1.144 (95% CI 1.072–1.167), BH-adjusted p ≈ 0.042 (raw p = 2.069e-04).
+    Interaction (Ancestry × Dosage): p = 0.539.
+    [AFR] p = 0.975, OR = 1.013 (95% CI 0.403–2.096).
+    [AMR] p = 0.459, OR = 0.896 (95% CI 0.674–1.183).
+    [EUR] p = 1.365e-04, OR = 1.155 (95% CI 1.081–1.176).
+  [MAIN IMPUTED] chr6:141,866,310-141,898,728 vs Laryngitis_and_tracheitis: OR = 0.572 (95% CI 0.491–0.752), BH-adjusted p ≈ 0.044 (raw p = 2.236e-04).
+    Interaction (Ancestry × Dosage): p = 5.851e-05.
+    [AFR] p = 7.470e-05, OR = 0.519 (95% CI 0.451–0.690).
+    [AMR] p = 0.863, OR = 1.076 (95% CI 0.451–2.238).
+    [EUR] p = 0.169, OR = 0.225 (95% CI 0.011–1.701).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Pure_hypercholesterolemia: OR = 1.082 (95% CI 1.041–1.100), BH-adjusted p ≈ 0.044 (raw p = 2.285e-04).
+    Interaction (Ancestry × Dosage): p = 0.656.
+    [AFR] p = 0.475, OR = 0.920 (95% CI 0.734–1.152).
+    [AMR] p = 0.131, OR = 1.103 (95% CI 0.971–1.223).
+    [EAS] p = 0.672, OR = 1.306 (95% CI 0.347–3.758).
+    [EUR] p = 8.039e-04, OR = 1.082 (95% CI 1.036–1.104).
+    [MID] p = 0.159, OR = 0.663 (95% CI 0.421–1.162).
+    [SAS] p = 0.385, OR = 1.155 (95% CI 0.844–1.429).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Pain_in_shoulder: OR = 0.952 (95% CI 0.943–0.975), BH-adjusted p ≈ 0.049 (raw p = 2.606e-04).
+    Interaction (Ancestry × Dosage): p = 0.200.
+    [AFR] p = 0.204, OR = 0.933 (95% CI 0.842–1.038).
+    [AMR] p = 0.557, OR = 1.023 (95% CI 0.951–1.090).
+    [EAS] p = 0.695, OR = 0.824 (95% CI 0.301–2.049).
+    [EUR] p = 3.209e-04, OR = 0.947 (95% CI 0.938–0.973).
+    [MID] p = 0.909, OR = 0.975 (95% CI 0.659–1.423).
+    [SAS] p = 0.086, OR = 1.390 (95% CI 0.955–1.927).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Nonspecific_reaction_to_test_for_tuberculosis: OR = 0.853 (95% CI 0.816–0.924), BH-adjusted p ≈ 0.050 (raw p = 2.758e-04).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Acquired_deformities_of_the_ankle_and_foot: OR = 1.133 (95% CI 1.065–1.160), BH-adjusted p ≈ 0.050 (raw p = 2.829e-04).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Diseases_of_vocal_cords_and_larynx_not_elsewhere_classified: OR = 0.888 (95% CI 0.864–0.942), BH-adjusted p ≈ 0.050 (raw p = 2.896e-04).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Malignant_neoplasm_of_the_breast: OR = 0.901 (95% CI 0.881–0.949), BH-adjusted p ≈ 0.050 (raw p = 2.942e-04).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Benign_mammary_dysplasias: OR = 0.917 (95% CI 0.900–0.958), BH-adjusted p ≈ 0.051 (raw p = 3.063e-04).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Sebaceous_cyst_Epidermal_cyst: OR = 0.928 (95% CI 0.913–0.963), BH-adjusted p ≈ 0.052 (raw p = 3.160e-04).
+  [MAIN IMPUTED] chr17:45,585,159-46,292,045 vs Malignant_neoplasm_of_the_breast_female: OR = 0.898 (95% CI 0.876–0.948), BH-adjusted p ≈ 0.053 (raw p = 3.295e-04).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Abnormal_findings_on_diagnostic_test_of_central_nervous_system: OR = 1.157 (95% CI 1.074–1.188), BH-adjusted p ≈ 0.059 (raw p = 3.740e-04).
+  [MAIN IMPUTED] chr12:46,896,694-46,915,975 vs Hypothyroidism_not_specified_as_secondary: OR = 1.083 (95% CI 1.040–1.103), BH-adjusted p ≈ 0.059 (raw p = 3.832e-04).
+
+CATEGORY TESTS
+Phecode category omnibus and directional tests:
+  chr12-46897663-INV-16289: Gastrointestinal (Increased risk): GBJ q = 1.067e-04 (p = 2.000e-05), GLS q = 5.762e-04 (p = 9.311e-05); Sense organs (Increased risk): GBJ q = 1.067e-04 (p = 2.000e-05), GLS q = 0.016 (p = 7.148e-03); Dermatological (Increased risk): GBJ q = 1.067e-04 (p = 2.000e-05), GLS q = 3.609e-05 (p = 2.255e-06); Genitourinary (Increased risk): GBJ q = 1.600e-04 (p = 4.000e-05), GLS q = 5.762e-04 (p = 1.080e-04); Neoplasms (Increased risk): GBJ q = 1.920e-04 (p = 6.000e-05), GLS q = 1.106e-03 (p = 2.764e-04); Symptoms (Increased risk): GBJ q = 2.667e-04 (p = 1.000e-04), GLS q = 2.477e-03 (p = 7.742e-04); Muscloskeletal (Increased risk): GBJ q = 8.686e-04 (p = 3.800e-04), GLS q = 0.091 (p = 0.062); Respiratory (Increased risk): GBJ q = 3.560e-03 (p = 1.780e-03), GLS q = 0.018 (p = 9.415e-03); Endocrine/Metab (Increased risk): GBJ q = 3.947e-03 (p = 2.220e-03), GLS q = 4.516e-03 (p = 1.694e-03); Neurological (Increased risk): GBJ q = 0.022 (p = 0.014), GLS q = 0.380 (p = 0.309); Mental (Increased risk): GBJ q = 0.391 (p = 0.366), GLS q = 0.018 (p = 0.010)
+  chr17-45585160-INV-706887: Symptoms (Decreased risk): GBJ q = 1.067e-04 (p = 2.000e-05), GLS q = 5.024e-04 (p = 6.281e-05); Neoplasms (Decreased risk): GBJ q = 1.067e-04 (p = 2.000e-05), GLS q = 5.024e-04 (p = 4.560e-05); Dermatological (Decreased risk): GBJ q = 1.067e-04 (p = 2.000e-05), GLS q = 0.018 (p = 3.320e-03); Gastrointestinal (Decreased risk): GBJ q = 7.200e-04 (p = 1.800e-04), GLS q = 0.037 (p = 9.273e-03); Neurological (Decreased risk): GBJ q = 8.228e-04 (p = 3.000e-04), GLS q = 0.136 (p = 0.068); Endocrine/Metab (Decreased risk): GBJ q = 8.228e-04 (p = 3.400e-04), GLS q = 0.157 (p = 0.108); Respiratory (Decreased risk): GBJ q = 8.228e-04 (p = 3.600e-04), GLS q = 0.104 (p = 0.046); Sense organs (Decreased risk): GBJ q = 5.511e-03 (p = 2.760e-03), GLS q = 0.259 (p = 0.194); Muscloskeletal (Decreased risk): GBJ q = 5.511e-03 (p = 3.100e-03), GLS q = 0.056 (p = 0.021); Cardiovascular (Decreased risk): GBJ q = 0.029 (p = 0.018), GLS q = 0.649 (p = 0.568); Blood/Immune (Decreased risk): GBJ q = 0.298 (p = 0.205), GLS q = 0.046 (p = 0.014)
+
+PGS CONTROLS
+[PGS CONTROL] Sensitivity of PheWAS associations to regional PGS covariates:
+  Source table: PGS_controls.tsv.
+  Largest p-value inflation: inversion chr17-45585160-INV-706887 × Morbid_obesity (p_nominal = 7.940e-09, p_with_pgs = 8.476e-03, fold-change = 1.068e+06).
+  Specific disease statistics:
+    Morbid_obesity: p_nominal = 7.940e-09 -> p_with_pgs = 8.476e-03 (fold-change = 1.068e+06)
+    Diastolic_heart_failure: p_nominal = 3.820e-05 -> p_with_pgs = 0.038 (fold-change = 997.523)
+    Obesity: p_nominal = 1.240e-06 -> p_with_pgs = 5.093e-04 (fold-change = 410.744)
+    Overweight_and_obesity: p_nominal = 9.660e-07 -> p_with_pgs = 3.265e-04 (fold-change = 337.975)
+    Mild_cognitive_impairment: p_nominal = 2.087e-04 -> p_with_pgs = 0.012 (fold-change = 58.628)
+    Malignant_neoplasm_of_the_breast: p_nominal = 3.666e-03 -> p_with_pgs = 0.095 (fold-change = 25.843)
+    Alzheimers_disease: p_nominal = 0.415 -> p_with_pgs = 0.743 (fold-change = 1.793)
+    Lump_or_mass_in_breast_or_nonspecific_abnormal_breast_exam: p_nominal = 1.151e-04 -> p_with_pgs = 6.380e-05 (fold-change = 0.554)
+
+FAMILY HISTORY
+Family History Validation (Family-based PheWAS):
+  [FAMILY FOLLOW-UP] Breast Cancer: OR = 0.914 (95% CI 0.862–0.968), p = 2.314e-03.
+  [FAMILY FOLLOW-UP] Obesity: OR = 1.098 (95% CI 1.041–1.159), p = 5.796e-04.
+  [FAMILY FOLLOW-UP] Heart Failure: OR = 1.043 (95% CI 0.984–1.106), p = 0.154.
+  [FAMILY FOLLOW-UP] Cognitive Impairment: OR = 0.922 (95% CI 0.869–0.978), p = 6.748e-03.
+
+SELECTION
+Allele frequency trajectory summary (12_47296118_A_G):
+  Windows analyzed: 101 spanning 0–1e+04 years before present.
+  Observed allele-frequency ranges 0.019–0.090; net change from 1e+04 to 0 years BP is 0.071.
+  Median haploid sample size per window ≈ 1e+03 alleles.
+  Largest ~1,000-year change: Δf = 0.038934894346088 between 4500 and 5500 years BP.

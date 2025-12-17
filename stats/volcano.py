@@ -1,0 +1,439 @@
+import os
+import math
+import numpy as np
+import pandas as pd
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.lines import Line2D
+from matplotlib.patches import FancyArrowPatch
+from matplotlib import colors as mcolors
+
+from _inv_common import map_inversion_series
+from volcano_shared import (
+    desaturate_color, assign_colors_and_markers, bh_fdr_cutoff,
+    create_legend_handles, NON_SIG_SIZE, NON_SIG_ALPHA, NON_SIG_DESAT,
+    SIG_POINT_SIZE, EXTREME_ARROW_SIZE
+)
+
+INPUT_FILE = "phewas_results.tsv"
+OUTPUT_PDF = "phewas_volcano.pdf"
+OUTPUT_PNG = "phewas_volcano.png"
+
+# Ensure PDF/SVG outputs remain vectorized with editable text
+plt.rcParams['pdf.fonttype'] = 42
+plt.rcParams['ps.fonttype'] = 42
+plt.rcParams['svg.fonttype'] = 'none'
+
+# Font scaling (larger everywhere for improved readability)
+BASE_FONT_SIZE = 20
+AXIS_LABEL_FONT_SIZE = 28
+TICK_LABEL_FONT_SIZE = 22
+LEGEND_FONT_SIZE = 16  # 25% smaller than original 21
+ANNOTATION_FONT_SIZE = 21
+
+plt.rcParams.update({
+    "font.size": BASE_FONT_SIZE,
+})
+
+# --------------------------- Data ---------------------------
+
+def load_and_prepare(path):
+    if not os.path.exists(path):
+        raise SystemExit(f"ERROR: '{path}' not found in current directory.")
+    df = pd.read_csv(path, sep="\t", dtype=str)
+
+    need = ["OR", "P_LRT_Overall"]
+    for c in need:
+        if c not in df.columns:
+            raise SystemExit(f"ERROR: missing required column '{c}' in {path}")
+
+    df["Inversion"] = df.get("Inversion", "Unknown").fillna("Unknown").astype(str)
+    df["Inversion"] = map_inversion_series(df["Inversion"])
+    df["Phenotype"] = df.get("Phenotype", "").fillna("").astype(str)
+
+    df["OR"] = pd.to_numeric(df["OR"], errors="coerce")
+    df["P_LRT_Overall"] = pd.to_numeric(df["P_LRT_Overall"], errors="coerce")
+
+    # Keep only finite, positive p
+    df = df[np.isfinite(df["P_LRT_Overall"].to_numpy()) & (df["P_LRT_Overall"] > 0)].copy()
+
+    df["lnOR"] = np.log(df["OR"]) / np.log(2.2)   # log_base3(OR)
+
+    df["neglog10p"] = -np.log10(df["P_LRT_Overall"])
+
+    df = df[np.isfinite(df["lnOR"]) & np.isfinite(df["neglog10p"])].copy()
+
+    # Drop empty labels
+    df = df[df["Phenotype"].str.strip() != ""].copy()
+
+    # Stabilize indices (used later for label bookkeeping)
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+# --------------------------- Axis ticks ---------------------------
+
+def make_or_ticks_sparse(xlim_ln):
+    candidates = np.array([0.1, 0.2, 0.33, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0])
+    ln_pos = np.log(candidates) / np.log(2.2)
+
+    # Within current xlim
+    in_range = (ln_pos >= xlim_ln[0]) & (ln_pos <= xlim_ln[1])
+
+    # Thin the middle but keep 1×
+    keep = in_range & ~(((candidates > 0.8) & (candidates < 1.25)) & (np.abs(candidates - 1.0) > 1e-12))
+
+    pos = ln_pos[keep]
+    vals = candidates[keep]
+
+    # Labels
+    labels = ["1×" if np.isclose(v, 1.0) else f"{v:.2g}×" for v in vals]
+    return pos.tolist(), labels
+
+# --------------------------- Label helpers ---------------------------
+
+def _px_to_data(ax, dx_px, dy_px):
+    inv = ax.transData.inverted()
+    x0, y0 = ax.transData.transform((0, 0))
+    x1, y1 = x0 + dx_px, y0 + dy_px
+    (xd, yd) = inv.transform((x1, y1)) - inv.transform((x0, y0))
+    return float(xd), float(yd)
+
+def _bbox_dict(ax, texts, expand=(1.0, 1.0)):
+    fig = ax.get_figure()
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    out = {}
+    for key, t in texts.items():
+        if (t is not None) and t.get_visible():
+            bb = t.get_window_extent(renderer=renderer)
+            if expand != (1.0, 1.0):
+                bb = bb.expanded(expand[0], expand[1])
+            out[key] = bb
+    return out
+
+def _overlap(bb1, bb2):
+    return not (bb1.x1 <= bb2.x0 or bb1.x0 >= bb2.x1 or bb1.y1 <= bb2.y0 or bb1.y0 >= bb2.y1)
+
+def _find_overlapping_pairs(bboxes_dict):
+    items = list(bboxes_dict.items())
+    pairs = set()
+    n = len(items)
+    for a in range(n):
+        ia, bba = items[a]
+        for b in range(a + 1, n):
+            ib, bbb = items[b]
+            if _overlap(bba, bbb):
+                pairs.add((ia, ib))
+    return pairs
+
+def _thin_by_significance(df, texts, keys_subset=None, expand=(1.02, 1.08)):
+    """
+    Delete labels until NO overlaps remain.
+    Keep the more significant (greater neglog10p). Tie-break: larger |lnOR|, then smaller index.
+    """
+    if not texts:
+        return False
+
+    vis_keys = []
+    for k, t in texts.items():
+        if t is None or (not t.get_visible()):
+            continue
+        if (keys_subset is None) or (k in keys_subset):
+            vis_keys.append(k)
+    if len(vis_keys) <= 1:
+        return False
+
+    any_text = next(iter(texts.values()))
+    ax = any_text.axes
+
+    bboxes = _bbox_dict(ax, {k: texts[k] for k in vis_keys}, expand=expand)
+    if len(bboxes) <= 1:
+        return False
+
+    pairs = _find_overlapping_pairs(bboxes)
+    if not pairs:
+        return False
+
+    losers = set()
+    for i, j in pairs:
+        yi = float(df.loc[i, "neglog10p"])
+        yj = float(df.loc[j, "neglog10p"])
+        if yi == yj:
+            xi = abs(float(df.loc[i, "lnOR"]))
+            xj = abs(float(df.loc[j, "lnOR"]))
+            if xi == xj:
+                drop = max(i, j)  # deterministic
+            else:
+                drop = i if xi < xj else j  # drop closer to center
+        else:
+            drop = i if yi < yj else j  # drop less significant
+        losers.add(drop)
+
+    changed = False
+    for k in losers:
+        t = texts.get(k, None)
+        if t is not None and t.get_visible():
+            t.set_visible(False)
+            changed = True
+    return changed
+
+def _prune_out_of_bounds(ax, texts, df, eps_px=1.0):
+    """
+    Remove labels that:
+      - exit the axes area;
+      - are on the wrong side of the y-axis (x=0) relative to their point;
+      - extend below the x-axis (y=0).
+    """
+    if not texts:
+        return False
+
+    fig = ax.get_figure()
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+
+    axbb = ax.get_window_extent(renderer=renderer)
+    yaxis_x_px = ax.transData.transform((0, 0))[0]
+    xaxis_y_px = ax.transData.transform((0, 0))[1]
+
+    changed = False
+    for idx, t in list(texts.items()):
+        if t is None or (not t.get_visible()):
+            continue
+        bb = t.get_window_extent(renderer=renderer)
+        # Outside axes?
+        if (bb.x0 < axbb.x0 - eps_px or bb.x1 > axbb.x1 + eps_px or
+            bb.y0 < axbb.y0 - eps_px or bb.y1 > axbb.y1 + eps_px):
+            t.set_visible(False); changed = True; continue
+        # Wrong side of y-axis?
+        x = float(df.loc[idx, "lnOR"])
+        if x >= 0:
+            if bb.x0 < yaxis_x_px - eps_px:
+                t.set_visible(False); changed = True; continue
+        else:
+            if bb.x1 > yaxis_x_px + eps_px:
+                t.set_visible(False); changed = True; continue
+        # Below x-axis?
+        if bb.y0 < xaxis_y_px - eps_px:
+            t.set_visible(False); changed = True; continue
+    return changed
+
+def _add_connector(ax, text_artist, px_point, color, linewidth=0.9, alpha=0.9):
+    fig = ax.get_figure()
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    bb = text_artist.get_window_extent(renderer=renderer)
+    cx = min(max(px_point[0], bb.x0), bb.x1)
+    cy = min(max(px_point[1], bb.y0), bb.y1)
+    inv = ax.transData.inverted()
+    xA, yA = inv.transform((cx, cy))
+    xB, yB = inv.transform(tuple(px_point))
+    ax.add_patch(FancyArrowPatch(
+        (xA, yA), (xB, yB),
+        arrowstyle="-", mutation_scale=1,
+        linewidth=linewidth, color=color, alpha=alpha,
+        shrinkA=0.0, shrinkB=0.0, zorder=3.4
+    ))
+
+# --------------------------- Plot ---------------------------
+
+def plot_volcano(df, out_pdf):
+    if df.empty:
+        raise SystemExit("ERROR: No valid rows after cleaning; nothing to plot.")
+
+    # Up-arrow handling for ultra-small p-values
+    EXTREME_Y = 300.0
+    df["is_extreme"] = df["neglog10p"] > EXTREME_Y
+    if (~df["is_extreme"]).any():
+        ymax_nonextreme = df.loc[~df["is_extreme"], "neglog10p"].max()
+        arrow_y = ymax_nonextreme * 1.10 if (np.isfinite(ymax_nonextreme) and ymax_nonextreme > 0) else EXTREME_Y * 1.10
+    else:
+        arrow_y = EXTREME_Y * 1.10
+    df["y_plot"] = np.where(df["is_extreme"], arrow_y, df["neglog10p"])
+
+    # Colors/markers
+    inv_levels = sorted(df["Inversion"].unique())
+    color_map, marker_map = assign_colors_and_markers(inv_levels)
+
+    # FDR threshold (BH 0.05)
+    p_cut = bh_fdr_cutoff(df["P_LRT_Overall"].to_numpy(), alpha=0.05)
+    y_fdr = -np.log10(p_cut) if (isinstance(p_cut, (int, float)) and np.isfinite(p_cut) and p_cut > 0) else np.nan
+    fdr_label = "BH FDR 0.05"
+
+    df["is_significant"] = np.isfinite(y_fdr) & (df["neglog10p"] >= y_fdr)
+
+    # Dynamically set the labeling threshold to a q-value alpha
+    p_cut_labeling = bh_fdr_cutoff(df["P_LRT_Overall"].to_numpy(), alpha=0.06)
+    if p_cut_labeling is not None and np.isfinite(p_cut_labeling) and p_cut_labeling > 0:
+        LABEL_MIN_Y = -np.log10(p_cut_labeling)
+    else:
+        # If no points meet the threshold, set an impossibly high value to label nothing.
+        LABEL_MIN_Y = np.inf
+
+    # X-limits: show ALL data (entirely in log space via lnOR; symmetric around 0 == OR 1)
+    xabs = np.abs(df["lnOR"].to_numpy())
+    xmax = np.nanmax(xabs) if xabs.size else 1.0
+    if not np.isfinite(xmax) or xmax <= 0:
+        xmax = 1.0
+    xpad = xmax * 0.06
+    xlim = (-xmax - xpad, xmax + xpad)
+
+    target_width_px = 3900
+    target_height_px = 2550
+    export_dpi = 300
+    fig, ax = plt.subplots(figsize=(target_width_px / export_dpi, target_height_px / export_dpi))
+
+    for spine_name in ("top", "right"):
+        ax.spines[spine_name].set_visible(False)
+    for spine_name in ("left", "bottom"):
+        ax.spines[spine_name].set_linewidth(1.2)
+    ax.tick_params(axis='both', which='major', labelsize=TICK_LABEL_FONT_SIZE, width=1.2)
+
+    # FULL LOG REGION: we already plot ln(OR) on a linear axis, so the entire axis is logarithmic in OR with no linear band.
+    ax.set_xlim(xlim)
+
+    ymax = df["y_plot"].max()
+    ax.set_ylim(0, (ymax * 1.06) if (np.isfinite(ymax) and ymax > 0) else 10)
+
+    # Baseline + FDR line
+    ax.axvline(0.0, color='k', linewidth=1.0)
+    if np.isfinite(y_fdr):
+        ax.axhline(y_fdr, linestyle=":", color="black", linewidth=1.2)
+
+    # Draw points
+    N = df.shape[0]
+    rasterize = N > 60000
+    for inv in inv_levels:
+        sub = df[df["Inversion"] == inv]
+        non_sig = sub[~sub["is_significant"]]
+        sig_non_ext = sub[sub["is_significant"] & ~sub["is_extreme"]]
+        sig_ext = sub[sub["is_significant"] & sub["is_extreme"]]
+
+        if not non_sig.empty:
+            # Use desaturated inversion color for non-significant points (keep marker shape)
+            non_sig_color = desaturate_color(color_map[inv], NON_SIG_DESAT)
+            ax.scatter(
+                non_sig["lnOR"].to_numpy(), non_sig["y_plot"].to_numpy(),
+                s=NON_SIG_SIZE, alpha=NON_SIG_ALPHA, marker=marker_map[inv],
+                facecolor=non_sig_color, edgecolor='none',
+                rasterized=rasterize
+            )
+
+        if not sig_non_ext.empty:
+            ax.scatter(
+                sig_non_ext["lnOR"].to_numpy(), sig_non_ext["y_plot"].to_numpy(),
+                s=SIG_POINT_SIZE, alpha=0.9, marker=marker_map[inv],
+                facecolor=color_map[inv], edgecolor="black", linewidth=0.4,
+                rasterized=rasterize
+            )
+
+        if not sig_ext.empty:
+            ax.scatter(
+                sig_ext["lnOR"].to_numpy(), sig_ext["y_plot"].to_numpy(),
+                s=EXTREME_ARROW_SIZE, alpha=0.95, marker=r'$\uparrow$',
+                facecolor=color_map[inv], edgecolor="black", linewidth=0.4,
+                rasterized=rasterize
+            )
+
+    # Axis labels & ticks
+    ax.set_ylabel(r"$-\log_{10}(p)$", fontsize=AXIS_LABEL_FONT_SIZE)  # italic p
+    ax.set_xlabel("Odds Ratio", fontsize=AXIS_LABEL_FONT_SIZE)
+    xticks, xlabels = make_or_ticks_sparse(ax.get_xlim())
+    if len(xticks) >= 3:
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xlabels, fontsize=TICK_LABEL_FONT_SIZE)
+
+    # Legend inside top-right; include dotted FDR sample
+    handles, ncol = create_legend_handles(
+        inv_levels, color_map, marker_map, fdr_label, y_fdr
+    )
+    ax.legend(
+        handles=handles,
+        loc="upper right", frameon=False, ncol=ncol,
+        borderaxespad=0.8, handlelength=1.6, columnspacing=1.0, labelspacing=0.45,
+        fontsize=LEGEND_FONT_SIZE
+    )
+
+    # -------------------- BINNED LABELING --------------------
+    # 10 bins by |lnOR|; 1 = most extreme
+    abs_ln = np.abs(df["lnOR"].to_numpy())
+    try:
+        df["__bin_tmp"] = pd.qcut(abs_ln, q=10, labels=False, duplicates="drop")
+        max_lbl = int(df["__bin_tmp"].max())
+        df["bin10"] = (max_lbl - df["__bin_tmp"]).astype(int) + 1  # 1..10 (1 = most extreme)
+    except Exception:
+        rk = pd.Series(abs_ln).rank(method="average", pct=True).to_numpy()
+        df["bin10"] = (10 - np.ceil(rk * 10).astype(int)) + 1
+
+    DX_LABEL_PX = 8.0
+    DY_LABEL_PX = 2.0
+    dx_data, dy_data = _px_to_data(ax, DX_LABEL_PX, DY_LABEL_PX)
+
+    texts = {}  # idx -> Text
+
+    # Place labels per bin (extreme->inward), prune until stable
+    for b in sorted(df["bin10"].unique()):
+        bin_rows = df[(df["bin10"] == b) & (df["neglog10p"] >= LABEL_MIN_Y)]
+        if bin_rows.empty:
+            continue
+
+        for idx, r in bin_rows.iterrows():
+            if idx in texts:
+                continue
+            x, y = float(r["lnOR"]), float(r["y_plot"])
+            label_text = str(r["Phenotype"]).replace("_", " ")  # underscores → spaces
+            if x >= 0:
+                tx, ha = x + dx_data, "left"
+            else:
+                tx, ha = x - dx_data, "right"
+            t = ax.text(tx, y, label_text, fontsize=ANNOTATION_FONT_SIZE, ha=ha, va="bottom",
+                        color="black", zorder=3.5)
+            texts[idx] = t
+
+        # Strict per-bin thinning + out-of-bounds pruning
+        while True:
+            removed1 = _thin_by_significance(df, texts, keys_subset=set(bin_rows.index), expand=(1.02, 1.08))
+            removed2 = _prune_out_of_bounds(ax, texts, df, eps_px=1.0)
+            if not (removed1 or removed2):
+                break
+
+    # Final global cleanup
+    while True:
+        removed1 = _thin_by_significance(df, texts, keys_subset=None, expand=(1.02, 1.08))
+        removed2 = _prune_out_of_bounds(ax, texts, df, eps_px=1.0)
+        if not (removed1 or removed2):
+            break
+
+    # Connectors
+    fig.canvas.draw()
+    point_px = {}
+    for idx, r in df.iterrows():
+        px = ax.transData.transform((float(r["lnOR"]), float(r["y_plot"])))
+        point_px[idx] = (float(px[0]), float(px[1]))
+    for idx, t in texts.items():
+        if t is None or (not t.get_visible()):
+            continue
+        inv = str(df.loc[idx, "Inversion"])
+        if bool(df.loc[idx, "is_significant"]):
+            col = color_map.get(inv, (0, 0, 0))
+        else:
+            # Use desaturated color for non-significant connectors
+            col = desaturate_color(color_map.get(inv, (0.7, 0.7, 0.7)), NON_SIG_DESAT)
+        _add_connector(ax, t, point_px[idx], color=col, linewidth=0.9, alpha=0.9)
+
+    # Save
+    fig.tight_layout()
+    with PdfPages(OUTPUT_PDF) as pdf:
+        pdf.savefig(fig, dpi=export_dpi)
+    fig.savefig(OUTPUT_PNG, dpi=export_dpi)
+    plt.close(fig)
+    print(f"Saved: {OUTPUT_PDF} and {OUTPUT_PNG}")
+
+# --------------------------- Entrypoint ---------------------------
+
+def main():
+    df = load_and_prepare(INPUT_FILE)
+    plot_volcano(df, OUTPUT_PDF)
+
+if __name__ == "__main__":
+    main()

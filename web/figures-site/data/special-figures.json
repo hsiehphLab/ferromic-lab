@@ -1,0 +1,174 @@
+{
+  "generatedAt": "2025-11-22T18:50:41+00:00",
+  "groups": [
+    {
+      "title": "Diversity and FST Profiles",
+      "slug": "diversity-fst",
+      "figures": [
+        {
+          "title": "Nucleotide Diversity by Category",
+          "filename": "pi_comparison_violins.pdf",
+          "description": "Pairwise violin-and-line plot comparing direct and inverted haplotypes across single-event and recurrent inversions."
+        },
+        {
+          "title": "Hudson FST by Recurrence Status",
+          "filename": "hudson_fst.pdf",
+          "description": "Hudson's FST violin plot split by single-event and recurrent inversion groups."
+        },
+        {
+          "title": "Spearman Decay Raincloud",
+          "filename": "special/spearman_decay_raincloud.pdf",
+          "description": "Raincloud distribution of Spearman correlations for FST decay near breakpoints, split by single-event versus recurrent inversions with significance highlighted."
+        },
+        {
+          "title": "Population Dosage by Ancestry",
+          "filename": "special/pop_dosage_plot.pdf",
+          "description": "Mean inversion dosage and allele frequency summaries with 95% confidence intervals across ancestry groups."
+        },
+        {
+          "title": "Mean π Overall Violins (40 kb)",
+          "filename": "pi_analysis_results_exact_mf_quadrants/total_40kb/pi_mf_overall_violins_total_40kb.pdf",
+          "description": "Overall violin-and-line comparison of mean nucleotide diversity across inversion categories using 40 kb windows."
+        },
+        {
+          "title": "Median π vs. Distance to Breakpoints (100 kb)",
+          "filename": "length_norm_trend_fast/pi_vs_inversion_edge_bp_cap100kb_grouped_median.pdf",
+          "description": "Median per-site nucleotide diversity as a function of distance from inversion breakpoints (100 kb window)."
+        },
+        {
+          "title": "Hudson FST (Pooled Ratio) vs. Distance (100 kb)",
+          "filename": "length_norm_trend_fast/fst_vs_inversion_edge_bp_cap100kb_grouped_pooled.pdf",
+          "description": "Hudson's FST pooled ratio-of-sums trend relative to inversion breakpoints (100 kb window)."
+        },
+        {
+          "title": "Mean π: Flanks vs. Middle (10 kb flanks / 20 kb middle)",
+          "filename": "pi_analysis_results_exact_mf_quadrants/total_40kb/pi_mf_quadrant_violins_total_40kb.pdf",
+          "description": "Two-violin comparison of mean nucleotide diversity between flanking and middle windows with paired connections."
+        },
+        {
+          "title": "Mean π by Category: Flanks vs. Middle",
+          "filename": "pi_analysis_results_exact_mf_quadrants/total_40kb/pi_mf_recurrence_violins_total_40kb.pdf",
+          "description": "Four-panel flank versus middle comparison stratified by recurrence status and orientation."
+        },
+        {
+          "title": "Inversion Allele Frequency Trajectories",
+          "filename": "data/inversion_trajectories_combined.pdf",
+          "description": "Four-panel allele frequency trajectories combining empirical points and selection-model fits across representative inversions."
+        },
+        {
+          "title": "Callset vs. Imputed Allele Frequencies",
+          "filename": "special/overall_AF_scatterplot.pdf",
+          "description": "Scatterplot comparing Porubsky et al. 2022 callset allele frequencies against All of Us imputed estimates across consensus inversions."
+        },
+        {
+          "title": "Callset vs. Imputed Allele Frequencies with CI",
+          "filename": "special/overall_AF_scatterplot_with_ci.pdf",
+          "description": "Scatterplot overlaying 95% confidence intervals for Porubsky callset and All of Us imputed allele frequencies."
+        },
+        {
+          "title": "Inversion Imputation Performance",
+          "filename": "special/inversion_r_plot.pdf",
+          "description": "Bar plot of inversion imputation correlations (r) for consensus single-event and recurrent inversions."
+        }
+      ]
+    },
+    {
+      "title": "Breakpoint FRF Analyses",
+      "slug": "frf",
+      "figures": [
+        {
+          "title": "FRF Edge vs. Middle Half-Violins",
+          "filename": "frf/frf_violin_from_url.pdf",
+          "description": "Half-violin comparison of FRF means for edge versus middle windows with paired inversion connections and box plots."
+        },
+        {
+          "title": "FRF Volcano Plot",
+          "filename": "frf/frf_volcano.pdf",
+          "description": "Volcano plot of centered FRF delta with point sizes scaled by within-category weight and colors separating single-event versus recurrent inversions."
+        },
+        {
+          "title": "FRF Breakpoint Enrichment by Status",
+          "filename": "frf/frf_delta_strip_box.pdf",
+          "description": "Precision-weighted strip-plus-box plot of frf_delta_centered values split by single-event and recurrent inversions with weighted medians and p-value annotation."
+        }
+      ]
+    },
+    {
+      "title": "Coding Sequence Analyses",
+      "slug": "coding-sequences",
+      "figures": [
+        {
+          "title": "CDS Conservation by Haplotype Category",
+          "filename": "cds_proportion_identical_by_category_violin.pdf",
+          "description": "Distribution of CDS conservation levels across inverted/direct and recurrent/single-event categories."
+        },
+        {
+          "title": "CDS Conservation Volcano",
+          "filename": "cds_conservation_volcano.pdf",
+          "description": "Volcano plot of differential CDS conservation between inverted and direct haplotypes, coloured by inversion recurrence."
+        },
+        {
+          "title": "MAPT Coding Sequence Polymorphism",
+          "filename": "mapt_cds_polymorphism_heatmap.pdf",
+          "description": "MAPT CDS alignment highlighting fixed and polymorphic sites for direct versus inverted haplotypes."
+        }
+      ]
+    },
+    {
+      "title": "PheWAS Analyses",
+      "slug": "phewas",
+      "figures": [
+        {
+          "title": "PheWAS Forest of Significant Associations",
+          "filename": "phewas_forest.pdf",
+          "description": "Forest plot summarising significant inversion–phenotype associations with odds ratios and confidence intervals."
+        },
+        {
+          "title": "PheWAS Forest — chr17:45,585,159-46,292,045 Only",
+          "filename": "phewas_forest_chr17_only.pdf",
+          "description": "Forest plot showing only associations for the chr17:45,585,159-46,292,045 inversion."
+        },
+        {
+          "title": "PheWAS Forest — Excluding chr17:45,585,159-46,292,045",
+          "filename": "phewas_forest_excluding_chr17.pdf",
+          "description": "Forest plot of all significant associations except chr17:45,585,159-46,292,045."
+        },
+        {
+          "title": "PheWAS Volcano (Full Scale)",
+          "filename": "phewas_volcano.pdf",
+          "description": "Volcano plot showing all odds ratios across 1,096 phecodes with full x-axis scale."
+        },
+        {
+          "title": "PheWAS Volcano (Ranged Scale)",
+          "filename": "phewas_volcano_ranged.pdf",
+          "description": "Volcano plot of odds ratios across 1,096 phecodes focused on OR 0.5-2.0 range with inset showing full scale."
+        },
+        {
+          "title": "PheWAS Category Summary Heatmap",
+          "filename": "phewas_category_heatmap.pdf",
+          "description": "Category grid showing disease systems, inversion loci, GBJ enrichment, and GLS directionality."
+        },
+        {
+          "title": "PGS Control Volcano Plot",
+          "filename": "PGS_control_volcano.pdf",
+          "description": "Volcano plot showing effect of polygenic score adjustment on chr17:45,585,159-46,292,045 associations. Arrows connect unadjusted (red) to adjusted (blue) estimates across phenotypes."
+        },
+        {
+          "title": "QQ Plot — All PheWAS Results",
+          "filename": "phewas_plots/qq_plot_overall.pdf",
+          "description": "Quantile-quantile plot of observed versus expected p-values for all PheWAS associations with genomic inflation factor (λ_GC = 1.324)."
+        },
+        {
+          "title": "Chr17 Inversion vs Tag SNP Correlation",
+          "filename": "phewas_plots/chr17_inversion_tag_correlation.pdf",
+          "description": "Correlation of effect sizes (odds ratios) between chr17 inversion and tag SNP for 26 significant phenotypes (r = 0.978, p = 7.76e-18)."
+        },
+        {
+          "title": "Family History vs Main PheWAS Forest",
+          "filename": "family_vs_main_forest.pdf",
+          "description": "Forest plot comparing effect sizes for phenotypes in the main PheWAS versus family history data."
+        }
+      ]
+    }
+  ]
+}
