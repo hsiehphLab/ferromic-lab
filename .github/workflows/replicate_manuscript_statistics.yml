@@ -1,0 +1,158 @@
+name: Replicate Manuscript Statistics
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/replicate_manuscript_statistics.yml'
+      - 'stats/**'
+      - 'data/**'
+  pull_request:
+    paths:
+      - '.github/workflows/replicate_manuscript_statistics.yml'
+      - 'stats/**'
+      - 'data/**'
+
+jobs:
+  run-report:
+    runs-on: ubuntu-latest
+    env:
+      GIT_LFS_SKIP_SMUDGE: 1
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pandas scipy statsmodels requests tqdm
+
+      - name: Generate manuscript statistics
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python stats/replicate_manuscript_statistics.py
+
+      - name: Collect replication artifacts
+        run: |
+          set -euo pipefail
+          output_dir="replicate-manuscript-statistics"
+          mkdir -p "$output_dir"
+
+          files=(
+            data/cds_identical_proportions.tsv
+            data/gene_inversion_direct_inverted.tsv
+            data/region_identical_proportions.tsv
+            data/skipped_details.tsv
+            data/replicate_manuscript_statistics.txt
+            stats/replicate_manuscript_statistics.txt
+            data/output.csv
+            data/phy_metadata.tsv
+            data/FST_data.tsv
+          )
+
+          collected=0
+          for file in "${files[@]}"; do
+            if [ -e "$file" ]; then
+              dest="$output_dir/$file"
+              mkdir -p "$(dirname "$dest")"
+              cp "$file" "$dest"
+              collected=$((collected + 1))
+              echo "Collected $file"
+            else
+              echo "Skipping $file: not found"
+            fi
+          done
+
+          if [ "$collected" -eq 0 ]; then
+            echo "No output files found to upload" >&2
+            exit 1
+          fi
+
+      - name: Upload manuscript statistics artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: replicate-manuscript-statistics
+          path: replicate-manuscript-statistics
+          if-no-files-found: error
+
+      - name: Commit and push data updates
+        env:
+          PUSH_TOKEN: ${{ secrets.WRITE_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          files=(
+            data/cds_identical_proportions.tsv
+            data/gene_inversion_direct_inverted.tsv
+            data/region_identical_proportions.tsv
+            data/skipped_details.tsv
+            data/replicate_manuscript_statistics.txt
+            stats/replicate_manuscript_statistics.txt
+            data/output.csv
+            data/phy_metadata.tsv
+            data/FST_data.tsv
+          )
+
+          for file in "${files[@]}"; do
+            if [ ! -e "$file" ]; then
+              if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+                echo "Skipping $file: tracked in repository but missing in workspace (not produced in this run)."
+              else
+                echo "Skipping $file: file not found in workspace and not tracked in repository."
+              fi
+              continue
+            fi
+
+            if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+              if git diff --quiet HEAD -- "$file"; then
+                echo "Skipping $file: exists but is byte-for-byte identical to the version in repository HEAD (nothing to commit)."
+                continue
+              else
+                echo "Staging $file: tracked file changed relative to repository HEAD."
+              fi
+            else
+              echo "Staging $file: newly generated file not currently tracked in repository."
+            fi
+
+            git add "$file"
+          done
+
+          if git diff --staged --quiet; then
+            echo "No data changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Update CDS statistics from replication pipeline"
+
+          # Pull changes to resolve potential conflicts (rebase local commit on top of remote)
+          # Prefer newly generated artifacts when resolving conflicts (e.g., add/add on data files)
+          git pull https://${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git main --rebase --autostash --strategy=recursive -X ours
+
+          max_attempts=3
+          attempt=1
+
+          while [ "$attempt" -le "$max_attempts" ]; do
+            if git push https://${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:main; then
+              echo "Push succeeded on attempt $attempt"
+              break
+            fi
+
+            echo "Push attempt $attempt failed; pulling latest changes and retrying..."
+            git pull https://${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git main --rebase --autostash --strategy=recursive -X ours
+            attempt=$((attempt + 1))
+            sleep 5
+          done
+
+          if [ "$attempt" -gt "$max_attempts" ]; then
+            echo "Failed to push changes after $max_attempts attempts" >&2
+            exit 1
+          fi

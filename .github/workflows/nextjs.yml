@@ -1,0 +1,361 @@
+name: Deploy Next.js site to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+    paths:
+      - "data/**"
+      - ".github/workflows/**"
+      - "web/figures-site/**"
+
+  pull_request:
+    paths:
+      - "data/**"
+      - ".github/workflows/nextjs.yml"
+      - "web/figures-site/**"
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+  # Rebuild when the analysis workflow finishes so newly generated figures are published
+  workflow_run:
+    workflows: ["run-analysis", "Generate supplementary tables", "Manual Run VCF Pipeline"]
+    types:
+      - completed
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build job
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      site-exists: ${{ steps.check-site.outputs.exists }}
+      manifest-generated: ${{ steps.check-manifest.outputs.generated }}
+    env:
+      NEXT_APP_PATH: web/figures-site
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Check if Next.js site exists
+        id: check-site
+        run: |
+          if [ -f "${{ env.NEXT_APP_PATH }}/package.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Next.js site detected"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No Next.js site detected"
+          fi
+      
+      - name: Detect package manager
+        if: steps.check-site.outputs.exists == 'true'
+        id: detect-package-manager
+        run: |
+          APP_PATH="${{ env.NEXT_APP_PATH }}"
+          if [ -f "$APP_PATH/yarn.lock" ]; then
+            echo "manager=yarn" >> $GITHUB_OUTPUT
+            echo "command=install" >> $GITHUB_OUTPUT
+            echo "runner=yarn" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ -f "$APP_PATH/package-lock.json" ]; then
+            echo "manager=npm" >> $GITHUB_OUTPUT
+            echo "command=ci" >> $GITHUB_OUTPUT
+            echo "runner=npx --no-install" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ -f "$APP_PATH/package.json" ]; then
+            echo "manager=npm" >> $GITHUB_OUTPUT
+            echo "command=install" >> $GITHUB_OUTPUT
+            echo "runner=npx --no-install" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "Unable to determine package manager"
+            exit 1
+          fi
+
+      - name: Restore latest analysis figures
+        if: steps.check-site.outputs.exists == 'true'
+        id: restore-figures
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APP_PATH="${{ env.NEXT_APP_PATH }}"
+          MANIFEST_PATH="$APP_PATH/data/figures.json"
+          FIGURES_DEST="$APP_PATH/public/figures"
+          mkdir -p "$(dirname "$MANIFEST_PATH")"
+          mkdir -p "$APP_PATH/public"
+
+          REQUIRED_DIRS=$(jq -r '
+            def filenames:
+              .. | objects | .filename? // empty | select(. != "");
+
+            filenames
+            | split("/")
+            | .[:-1]
+            | select(length > 0)
+            | join("/")
+          ' "$APP_PATH/data/special-figures.json" "$APP_PATH/data/phewas-figures.json" | sort -u)
+
+          has_required_dirs() {
+            local root="$1"
+            while IFS= read -r dir; do
+              [ -z "$dir" ] && continue
+              if [ ! -d "$root/$dir" ]; then
+                return 1
+              fi
+            done <<< "$REQUIRED_DIRS"
+            return 0
+          }
+
+          TRIGGER_WORKFLOW="${{ github.event.workflow_run && github.event.workflow_run.name || '' }}"
+          RUN_ID="${{ github.event.workflow_run && github.event.workflow_run.id || '' }}"
+          if [ "$TRIGGER_WORKFLOW" != 'run-analysis' ]; then
+            RUN_ID=""
+          fi
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list --workflow "run-analysis" --limit 20 --json databaseId,conclusion \
+              --jq '.[] | select(.conclusion == "success") | .databaseId' | head -n 1 || true)
+          fi
+
+          if [ -z "$RUN_ID" ]; then
+            echo "No successful run-analysis workflow runs found; cannot build site without figure artifacts."
+            exit 1
+          fi
+
+          echo "Downloading artifacts from run-analysis run $RUN_ID"
+          WORK_DIR=$(mktemp -d)
+          if ! gh run download "$RUN_ID" --name figure-outputs --dir "$WORK_DIR"; then
+            echo "Failed to download figure-outputs artifact for run $RUN_ID"
+            exit 1
+          fi
+
+          SEARCH_ROOT="$WORK_DIR"
+
+          ZIP_ARCHIVE=$(find "$WORK_DIR" -maxdepth 2 -type f -name '*.zip' -print -quit)
+          if [ -n "$ZIP_ARCHIVE" ]; then
+            echo "Extracting artifact archive $ZIP_ARCHIVE"
+            EXTRACT_DIR=$(mktemp -d)
+            if unzip -q "$ZIP_ARCHIVE" -d "$EXTRACT_DIR"; then
+              SEARCH_ROOT="$EXTRACT_DIR"
+            else
+              echo "Warning: failed to extract $ZIP_ARCHIVE; continuing with downloaded directory structure."
+            fi
+          fi
+
+          FIGURES_ROOT=$(find "$SEARCH_ROOT" -type d -path "*/artifacts/figures" -print -quit)
+          if [ -z "$FIGURES_ROOT" ]; then
+            FIGURES_ROOT=$(find "$SEARCH_ROOT" -maxdepth 8 -type d -name figures -print -quit)
+          fi
+
+          if [ -z "$FIGURES_ROOT" ]; then
+            FIGURES_ROOT=$(find "$SEARCH_ROOT" -type d -print | while read -r candidate; do
+              if has_required_dirs "$candidate"; then
+                echo "$candidate"
+                break
+              fi
+            done)
+          fi
+
+          if [ -z "$FIGURES_ROOT" ] && has_required_dirs "$SEARCH_ROOT"; then
+            FIGURES_ROOT="$SEARCH_ROOT"
+          fi
+
+          if [ -z "$FIGURES_ROOT" ]; then
+            echo "Figures directory not found in artifact; failing build."
+            exit 1
+          else
+            echo "Using figures root: $FIGURES_ROOT"
+          fi
+
+          if ! has_required_dirs "$FIGURES_ROOT"; then
+            echo "Figures root $FIGURES_ROOT is missing required figure directories; searching for an alternative root."
+            ALT_ROOT=$(find "$SEARCH_ROOT" -type d -name figures -print | while read -r candidate; do
+              if has_required_dirs "$candidate"; then
+                echo "$candidate"
+                break
+              fi
+            done)
+
+            if [ -n "$ALT_ROOT" ]; then
+              FIGURES_ROOT="$ALT_ROOT"
+              echo "Using figures root with required directories: $FIGURES_ROOT"
+            else
+              echo "No figures directory within the artifact contained the required subdirectories."
+              exit 1
+            fi
+          fi
+
+          python3 scripts/prepare_figures_manifest.py \
+            --figures-root "$FIGURES_ROOT" \
+            --public-root "$FIGURES_DEST" \
+            --manifest-path "$MANIFEST_PATH" \
+            --required-figures-config "$APP_PATH/data/special-figures.json" \
+            --required-figures-config "$APP_PATH/data/phewas-figures.json"
+
+          echo "restored=true" >> "$GITHUB_OUTPUT"
+          echo "Manifest and figures restored from run-analysis artifacts."
+
+      - name: Restore supplementary tables download
+        if: steps.check-site.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APP_PATH="${{ env.NEXT_APP_PATH }}"
+          DEST="$APP_PATH/public/downloads"
+          mkdir -p "$DEST"
+
+          TRIGGER_WORKFLOW="${{ github.event.workflow_run && github.event.workflow_run.name || '' }}"
+          RUN_ID="${{ github.event.workflow_run && github.event.workflow_run.id || '' }}"
+          if [ "$TRIGGER_WORKFLOW" != 'Generate supplementary tables' ]; then
+            RUN_ID=""
+          fi
+
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list --workflow "Generate supplementary tables" --limit 20 --json databaseId,conclusion \
+              --jq '.[] | select(.conclusion == "success") | .databaseId' | head -n 1 || true)
+          fi
+
+          if [ -z "$RUN_ID" ]; then
+            echo "No supplementary tables workflow runs found; keeping existing download in place."
+            exit 0
+          fi
+
+          WORK_DIR=$(mktemp -d)
+          if ! gh run download "$RUN_ID" --name supplementary-tables --dir "$WORK_DIR"; then
+            echo "Unable to download supplementary tables artifact for run $RUN_ID; leaving existing file in place."
+            exit 0
+          fi
+
+          FILE_PATH=$(find "$WORK_DIR" -type f -name 'supplementary_tables.xlsx' -print -quit)
+          if [ -z "$FILE_PATH" ]; then
+            echo "Supplementary tables artifact from run $RUN_ID did not contain the expected XLSX file."
+            exit 0
+          fi
+
+          cp "$FILE_PATH" "$DEST/supplementary_tables.xlsx"
+          echo "Supplementary tables restored to $DEST"
+
+      - name: Verify figures restored for workflow_run trigger
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'run-analysis' && steps.restore-figures.outputs.restored != 'true'
+        run: |
+          echo "Expected figure artifacts from run-analysis workflow ${{ github.event.workflow_run.id }} but none were available." >&2
+          exit 1
+
+      - name: Check manifest status
+        if: steps.check-site.outputs.exists == 'true'
+        id: check-manifest
+        run: |
+          set -euo pipefail
+          APP_PATH="${{ env.NEXT_APP_PATH }}"
+          MANIFEST="$APP_PATH/data/figures.json"
+
+          if [ ! -f "$MANIFEST" ]; then
+            echo "generated=false" >> "$GITHUB_OUTPUT"
+            echo "Manifest not found at $MANIFEST; skipping deployment."
+            exit 0
+          fi
+
+          export MANIFEST
+          GENERATED=$(jq -r 'if (.generatedAt // "") | tostring | length > 0 then "true" else "false" end' "$MANIFEST")
+
+          echo "generated=$GENERATED" >> "$GITHUB_OUTPUT"
+
+          if [ "$GENERATED" != "true" ]; then
+            echo "Manifest is missing a generatedAt timestamp; skipping deployment."
+          fi
+
+      - name: Commit and push updated figures manifest
+        if: steps.check-site.outputs.exists == 'true' && steps.check-manifest.outputs.generated == 'true'
+        env:
+          PUSH_TOKEN: ${{ secrets.WRITE_TOKEN }}
+        run: |
+          set -euo pipefail
+          APP_PATH="${{ env.NEXT_APP_PATH }}"
+          MANIFEST="$APP_PATH/data/figures.json"
+
+          if [ ! -f "$MANIFEST" ]; then
+            echo "Figures manifest not found at $MANIFEST; nothing to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "$MANIFEST"
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit for figures manifest."
+            exit 0
+          fi
+
+          git commit -m "Update figures manifest for figures site"
+          git pull https://${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git main --rebase --autostash --strategy=recursive -X ours
+          git push https://${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:main
+
+      - name: Setup Node
+        if: steps.check-site.outputs.exists == 'true' && steps.check-manifest.outputs.generated == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: ${{ steps.detect-package-manager.outputs.manager }}
+          cache-dependency-path: ${{ env.NEXT_APP_PATH }}/${{ steps.detect-package-manager.outputs.manager == 'yarn' && 'yarn.lock' || 'package-lock.json' }}
+
+      - name: Setup Pages
+        if: steps.check-site.outputs.exists == 'true' && steps.check-manifest.outputs.generated == 'true'
+        uses: actions/configure-pages@v5
+        with:
+          static_site_generator: next
+
+      - name: Restore cache
+        if: steps.check-site.outputs.exists == 'true' && steps.check-manifest.outputs.generated == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.NEXT_APP_PATH }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('web/figures-site/package-lock.json', 'web/figures-site/yarn.lock') }}-${{ hashFiles('web/figures-site/**/*.[jt]s', 'web/figures-site/**/*.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('web/figures-site/package-lock.json', 'web/figures-site/yarn.lock') }}-
+
+      - name: Install dependencies
+        if: steps.check-site.outputs.exists == 'true' && steps.check-manifest.outputs.generated == 'true'
+        working-directory: ${{ env.NEXT_APP_PATH }}
+        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+
+      - name: Build with Next.js
+        if: steps.check-site.outputs.exists == 'true' && steps.check-manifest.outputs.generated == 'true'
+        working-directory: ${{ env.NEXT_APP_PATH }}
+        run: ${{ steps.detect-package-manager.outputs.runner }} next build
+
+      - name: Upload artifact
+        if: steps.check-site.outputs.exists == 'true' && steps.check-manifest.outputs.generated == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.NEXT_APP_PATH }}/out
+
+  # Deployment job
+  deploy:
+    if: needs.build.outputs.site-exists == 'true' && needs.build.outputs.manifest-generated == 'true'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

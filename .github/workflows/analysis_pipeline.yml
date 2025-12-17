@@ -1,0 +1,457 @@
+name: Analysis Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      region_override:
+        description: 'Specific region (e.g., chr22:123-456). Leave empty for full run.'
+        required: false
+        type: string
+
+jobs:
+  prep-and-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      regions: ${{ steps.set-matrix.outputs.regions }}
+      gene_batches: ${{ steps.set-matrix.outputs.gene_batches }}
+      cache_key: ${{ steps.calc-key.outputs.key }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+      - name: Calculate Cache Key
+        id: calc-key
+        env:
+          THE_KEY: prep-results-v1-${{ runner.os }}-${{ hashFiles('cds/*.py', 'data/*.tsv', '.lfs-assets-id') }}
+        run: echo "key=$THE_KEY" >> $GITHUB_OUTPUT
+
+      - name: Check Output Cache
+        id: prep-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            combined_*.phy
+            outgroup_*.phy
+          key: ${{ steps.calc-key.outputs.key }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install numpy pandas scipy statsmodels ete3 lxml requests tqdm
+
+      - name: Cache LFS
+        if: steps.prep-cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}
+          restore-keys: |
+            ${{ runner.os }}-lfs-
+
+      - name: Pull LFS or Download Artifact
+        if: steps.prep-cache.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git lfs pull; then
+            echo "LFS pull successful"
+          else
+            echo "LFS pull failed. Falling back to artifact download."
+
+            set -euo pipefail
+            MANUAL_WORKFLOW_FILE="manual_run_vcf.yml"
+            api_root="https://api.github.com"
+            headers=(
+              -H "Authorization: Bearer $GH_TOKEN"
+              -H "Accept: application/vnd.github+json"
+              -H "X-GitHub-Api-Version: 2022-11-28"
+            )
+
+            echo "Finding latest successful run of $MANUAL_WORKFLOW_FILE..."
+            run_json="$(
+              curl -sS -L "${headers[@]}" \
+                "$api_root/repos/${{ github.repository }}/actions/workflows/${MANUAL_WORKFLOW_FILE}/runs?status=success&per_page=1"
+            )"
+            run_id="$(echo "$run_json" | jq '.workflow_runs[0].id')"
+
+            if [[ -z "$run_id" || "$run_id" == "null" ]]; then
+              echo "No successful Manual Run VCF Pipeline runs found." >&2
+              exit 1
+            fi
+            echo "Found Run ID: $run_id"
+
+            echo "Listing artifacts..."
+            artifact_json="$(
+              curl -sS -L "${headers[@]}" \
+                "$api_root/repos/${{ github.repository }}/actions/runs/$run_id/artifacts" \
+            )"
+
+            download_url=$(echo "$artifact_json" | jq -r '.artifacts[] | select(.name == "run-vcf-phy-outputs") | .archive_download_url')
+
+            if [[ -z "$download_url" || "$download_url" == "null" ]]; then
+               echo "Artifact 'run-vcf-phy-outputs' not found in run $run_id" >&2
+               exit 1
+            fi
+            echo "Found Artifact URL."
+
+            echo "Downloading artifact..."
+            curl -sS -L \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$download_url" > artifact.zip
+
+            echo "Extracting artifact..."
+            unzip -o artifact.zip
+
+            if [[ -f "phy_outputs.zip" ]]; then
+                mkdir -p data
+                mv phy_outputs.zip data/phy_outputs.zip
+                echo "Successfully restored data/phy_outputs.zip from artifact."
+            else
+                echo "Expected phy_outputs.zip inside the artifact, but not found."
+                ls -l
+                exit 1
+            fi
+
+            rm artifact.zip
+          fi
+
+      - name: Cache AXT file
+        if: steps.prep-cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: hg38.panTro6.net.axt.gz
+          key: axt-file-v1
+
+      - name: Unzip PHY files
+        if: steps.prep-cache.outputs.cache-hit != 'true'
+        run: |
+          unzip -o data/phy_outputs.zip
+          rm data/phy_outputs.zip
+          unzip -o '*.zip' || echo "No nested zip files found"
+          rm -f '*.zip'
+          ls -R
+      - name: Run AXT to PHY
+        if: steps.prep-cache.outputs.cache-hit != 'true'
+        run: |
+          python3 cds/axt_to_phy.py
+          ls outgroup_* || echo "No outgroup files found in root"
+        env:
+          AXT_WORKERS: 4
+
+      - name: Run Combine PHY
+        if: steps.prep-cache.outputs.cache-hit != 'true'
+        run: python3 cds/combine_phy.py
+
+      - name: Prepare Tools (Download & Zip)
+        run: |
+          # Create a temp python script to reuse pipeline_lib logic
+          cat <<EOF > prepare_tools.py
+          import os, sys
+          sys.path.append('cds')
+          import pipeline_lib as lib
+          lib.setup_external_tools(os.getcwd())
+          EOF
+          python3 prepare_tools.py
+
+          # Zip them up
+          zip -r tools.zip paml/ iqtree-3.0.1-Linux/
+
+      - name: Generate GHA Matrix
+        id: set-matrix
+        env:
+          REGION_INPUT: ${{ inputs.region_override }}
+        run: |
+          # Run the generator and capture JSON output
+          REGION_ARG=""
+          if [[ -n "$REGION_INPUT" ]]; then
+             REGION_ARG="--region-override $REGION_INPUT"
+          fi
+
+          JSON=$(python3 cds/generate_gha_matrix.py --batch-size 1 $REGION_ARG)
+
+          # Parse JSON to get regions and batches
+          REGIONS=$(echo "$JSON" | python3 -c "import sys, json; print(json.dumps(json.load(sys.stdin)['regions']))")
+          BATCHES=$(echo "$JSON" | python3 -c "import sys, json; print(json.dumps(json.load(sys.stdin)['gene_batches']))")
+
+          # Output to GHA environment
+          echo "regions=$REGIONS" >> $GITHUB_OUTPUT
+          echo "gene_batches=$BATCHES" >> $GITHUB_OUTPUT
+
+      - name: Upload Tools Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tools-zip
+          path: tools.zip
+
+      - name: Upload Combined PHY Artifacts
+        if: steps.prep-cache.outputs.cache-hit != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-phy-files
+          path: |
+            combined_*.phy
+          retention-days: 3
+
+  iqtree-phase:
+    needs: prep-and-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 15
+      matrix:
+        region: ${{ fromJson(needs.prep-and-matrix.outputs.regions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install numpy pandas scipy statsmodels ete3 lxml requests tqdm
+
+      - name: Download Tools
+        uses: actions/download-artifact@v4
+        with:
+          name: tools-zip
+
+      - name: Unzip Tools
+        run: unzip tools.zip
+
+      - name: Restore PHY Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            combined_*.phy
+            outgroup_*.phy
+          key: ${{ needs.prep-and-matrix.outputs.cache_key }}
+          fail-on-cache-miss: true
+
+      - name: Calculate Input Hash
+        id: calc-hash
+        run: |
+          python3 -c "
+          import sys, glob, hashlib, os
+          sys.path.append('cds')
+          import pipeline_lib as lib
+
+          target_region = '${{ matrix.region }}'
+          files = glob.glob('combined_inversion_*.phy')
+          found = None
+          for f in files:
+              try:
+                  if lib.parse_region_filename(f)['label'] == target_region:
+                      found = f
+                      break
+              except:
+                  continue
+
+          if found:
+              print(f'Found file: {found}')
+              with open(found, 'rb') as f:
+                  h = hashlib.sha256(f.read()).hexdigest()
+                  print(f'Hash: {h}')
+                  with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+                      fh.write(f'hash={h}\n')
+          else:
+              print(f'Error: Could not find file for region {target_region}')
+              sys.exit(1)
+          "
+
+      - name: Restore IQ-TREE Cache
+        uses: actions/cache@v4
+        id: iqtree-cache
+        with:
+          path: region_trees
+          key: iqtree-v1-${{ matrix.region }}-${{ steps.calc-hash.outputs.hash }}
+
+      - name: Run IQ-TREE
+        run: python3 cds/iqtree_runner.py
+        env:
+          TARGET_REGION: ${{ matrix.region }}
+
+      - name: Upload Region Tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: region-tree-${{ matrix.region }}
+          path: |
+            region_trees/${{ matrix.region }}.treefile
+            region_trees/${{ matrix.region }}.FAILED
+          if-no-files-found: ignore
+          retention-days: 3
+
+  paml-phase-h0:
+    needs: [prep-and-matrix, iqtree-phase]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 15
+      matrix:
+        batch: ${{ fromJson(needs.prep-and-matrix.outputs.gene_batches) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install numpy pandas scipy statsmodels ete3 lxml requests tqdm
+
+      - name: Download Tools
+        uses: actions/download-artifact@v4
+        with:
+          name: tools-zip
+
+      - name: Unzip Tools
+        run: unzip tools.zip
+
+      - name: Restore PHY Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            combined_*.phy
+            outgroup_*.phy
+          key: ${{ needs.prep-and-matrix.outputs.cache_key }}
+          fail-on-cache-miss: true
+
+      - name: Download All Region Trees
+        uses: actions/download-artifact@v4
+        with:
+          pattern: region-tree-*
+          merge-multiple: true
+          path: region_trees
+
+      - name: Run PAML (Batch)
+        run: python3 cds/codeml_runner.py
+        env:
+          GENE_BATCH: ${{ matrix.batch }}
+          # Optional: configure timeouts etc
+          PAML_TIMEOUT: 21100
+          REGION_OVERRIDE_FILTER: ${{ inputs.region_override }}
+          KEEP_PAML_OUT: 1
+          PAML_MODEL: h0
+
+      - name: Upload Partial Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: paml-results-h0-${{ strategy.job-index }}
+          path: |
+            partial_results_*.tsv
+            paml_runs/
+          retention-days: 3
+
+  paml-phase-h1:
+    needs: [prep-and-matrix, iqtree-phase]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 15
+      matrix:
+        batch: ${{ fromJson(needs.prep-and-matrix.outputs.gene_batches) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install numpy pandas scipy statsmodels ete3 lxml requests tqdm
+
+      - name: Download Tools
+        uses: actions/download-artifact@v4
+        with:
+          name: tools-zip
+
+      - name: Unzip Tools
+        run: unzip tools.zip
+
+      - name: Restore PHY Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            combined_*.phy
+            outgroup_*.phy
+          key: ${{ needs.prep-and-matrix.outputs.cache_key }}
+          fail-on-cache-miss: true
+
+      - name: Download All Region Trees
+        uses: actions/download-artifact@v4
+        with:
+          pattern: region-tree-*
+          merge-multiple: true
+          path: region_trees
+
+      - name: Run PAML (Batch)
+        run: python3 cds/codeml_runner.py
+        env:
+          GENE_BATCH: ${{ matrix.batch }}
+          # Optional: configure timeouts etc
+          PAML_TIMEOUT: 21100
+          REGION_OVERRIDE_FILTER: ${{ inputs.region_override }}
+          KEEP_PAML_OUT: 1
+          PAML_MODEL: h1
+
+      - name: Upload Partial Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: paml-results-h1-${{ strategy.job-index }}
+          path: |
+            partial_results_*.tsv
+            paml_runs/
+          retention-days: 3
+
+  finalize-phase:
+    needs: [paml-phase-h0, paml-phase-h1]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install numpy pandas scipy statsmodels ete3 lxml requests tqdm
+
+      - name: Download H0 Partial Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: paml-results-h0-*
+          merge-multiple: true
+
+      - name: Download H1 Partial Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: paml-results-h1-*
+          merge-multiple: true
+
+      - name: Run Final Stats
+        run: python3 cds/finalize_results.py
+
+      - name: Upload Final Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-paml-results
+          path: |
+            full_paml_results_*.tsv
+          retention-days: 3

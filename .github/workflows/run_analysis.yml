@@ -1,0 +1,469 @@
+name: run-analysis
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-figures:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [CDS, Diversity, FST, Associations]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy scikit-allel scipy pandas statsmodels pyarrow tqdm numba pytest pytest-benchmark patchelf
+          pip install seaborn matplotlib adjustText requests
+
+      - name: Download manual VCF workflow artefacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import io
+          import os
+          import zipfile
+          from pathlib import Path
+
+          import requests
+
+          repo = os.environ.get("GITHUB_REPOSITORY")
+          token = os.environ.get("GITHUB_TOKEN")
+          if not repo:
+              raise SystemExit("GITHUB_REPOSITORY environment variable is required")
+          if not token:
+              raise SystemExit("GITHUB_TOKEN environment variable is required to download artefacts")
+
+          workflow_file = "manual_run_vcf.yml"
+          session = requests.Session()
+          session.headers.update(
+              {
+                  "Authorization": f"Bearer {token}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              }
+          )
+
+          def api_get(url: str, **params):
+              response = session.get(url, params=params)
+              response.raise_for_status()
+              return response
+
+          runs_url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/runs"
+          runs = api_get(runs_url, status="success", exclude_pull_requests="true", per_page=1).json().get("workflow_runs", [])
+          if not runs:
+              raise SystemExit("No successful runs found for manual_run_vcf.yml")
+
+          run = runs[0]
+          run_id = run["id"]
+          print(f"Using manual_run_vcf.yml artefacts from run {run_id} ({run['html_url']})")
+
+          artifacts_url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts"
+          artifacts = {
+              artifact["name"]: artifact
+              for artifact in api_get(artifacts_url, per_page=100).json().get("artifacts", [])
+          }
+
+          required = {
+              "run-vcf-output-csv": "output.csv",
+              "run-vcf-falsta": None,
+              "run-vcf-hudson-fst": "hudson_fst_results.tsv.gz",
+          }
+
+          missing = [name for name in required if name not in artifacts]
+          if missing:
+              raise SystemExit(f"Missing required artefacts from manual_run_vcf.yml: {', '.join(missing)}")
+
+          repo_root = Path(".").resolve()
+          downloads_root = repo_root / "analysis_downloads"
+          public_root = downloads_root / "public_internet"
+          public_root.mkdir(parents=True, exist_ok=True)
+          download_log = downloads_root / ".downloaded_files"
+          download_log.parent.mkdir(parents=True, exist_ok=True)
+          if not download_log.exists():
+              download_log.touch()
+
+          def download_artifact(artifact):
+              url = artifact["archive_download_url"]
+              print(f"Downloading artefact: {artifact['name']}")
+              resp = session.get(url)
+              resp.raise_for_status()
+              return zipfile.ZipFile(io.BytesIO(resp.content))
+
+          log_entries = []
+          # output.csv
+          with download_artifact(artifacts["run-vcf-output-csv"]) as zf:
+              for member in zf.namelist():
+                  if member.endswith("output.csv"):
+                      target = public_root / "output.csv"
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      with target.open("wb") as fh:
+                          fh.write(zf.read(member))
+                      log_entries.append(target)
+                      print(f"Wrote {target.relative_to(repo_root)}")
+                      break
+              else:
+                  raise SystemExit("output.csv not found in run-vcf-output-csv artefact")
+
+          # FALSTA files
+          with download_artifact(artifacts["run-vcf-falsta"]) as zf:
+              extracted = False
+              for member in zf.namelist():
+                  if member.endswith(".falsta") or member.endswith(".falsta.gz"):
+                      target = public_root / Path(member).name
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      with target.open("wb") as fh:
+                          fh.write(zf.read(member))
+                      log_entries.append(target)
+                      print(f"Wrote {target.relative_to(repo_root)}")
+                      extracted = True
+              if not extracted:
+                  raise SystemExit("No .falsta or .falsta.gz files found in run-vcf-falsta artefact")
+
+          # Hudson FST results
+          with download_artifact(artifacts["run-vcf-hudson-fst"]) as zf:
+              for member in zf.namelist():
+                  if member.endswith("hudson_fst_results.tsv") or member.endswith("hudson_fst_results.tsv.gz"):
+                      target_name = Path(member).name
+                      target = public_root / target_name
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      with target.open("wb") as fh:
+                          fh.write(zf.read(member))
+                      log_entries.append(target)
+                      print(f"Wrote {target.relative_to(repo_root)}")
+                      break
+              else:
+                  raise SystemExit("hudson_fst_results.tsv(.gz) not found in run-vcf-hudson-fst artefact")
+
+          with download_log.open("a", encoding="utf-8") as fh:
+              for path in log_entries:
+                  try:
+                      fh.write(str(path.relative_to(repo_root)) + "\n")
+                  except ValueError:
+                      fh.write(str(path) + "\n")
+          PY
+
+      - name: Download and stage PHYLIP inputs for CDS
+        if: matrix.group == 'CDS'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import gzip
+          import io
+          import os
+          import zipfile
+          from pathlib import Path
+
+          import requests
+
+          repo = os.environ.get("GITHUB_REPOSITORY")
+          token = os.environ.get("GITHUB_TOKEN")
+
+          if not repo:
+              raise SystemExit("GITHUB_REPOSITORY environment variable is required")
+          if not token:
+              raise SystemExit("GITHUB_TOKEN environment variable is required to download artefacts")
+
+          workflow_file = "manual_run_vcf.yml"
+          session = requests.Session()
+          session.headers.update(
+              {
+                  "Authorization": f"Bearer {token}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              }
+          )
+
+          def api_get(url: str, **params):
+              response = session.get(url, params=params)
+              response.raise_for_status()
+              return response
+
+          runs_url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/runs"
+          runs = api_get(runs_url, status="success", exclude_pull_requests="true", per_page=1).json().get("workflow_runs", [])
+          if not runs:
+              raise SystemExit("No successful runs found for manual_run_vcf.yml")
+
+          run = runs[0]
+          run_id = run["id"]
+          print(f"Using manual_run_vcf.yml artefacts from run {run_id} ({run['html_url']})")
+
+          artifacts_url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts"
+          artifacts = {
+              artifact["name"]: artifact
+              for artifact in api_get(artifacts_url, per_page=100).json().get("artifacts", [])
+          }
+
+          if "run-vcf-phy-outputs" not in artifacts:
+              raise SystemExit("Missing required artefact: run-vcf-phy-outputs")
+
+          repo_root = Path(".").resolve()
+          data_dir = repo_root / "data"
+          data_dir.mkdir(parents=True, exist_ok=True)
+
+          phy_zip_path = data_dir / "phy_outputs.zip"
+
+          def download_artifact(artifact):
+              url = artifact["archive_download_url"]
+              print(f"Downloading artefact: {artifact['name']}")
+              resp = session.get(url)
+              resp.raise_for_status()
+              return zipfile.ZipFile(io.BytesIO(resp.content))
+
+          # Extract inner phy_outputs.zip from the artifact
+          with download_artifact(artifacts["run-vcf-phy-outputs"]) as zf:
+              inner_zip_name = None
+              for member in zf.namelist():
+                  if member.endswith("phy_outputs.zip"):
+                      inner_zip_name = member
+                      break
+              if inner_zip_name is None:
+                  raise SystemExit("phy_outputs.zip not found inside run-vcf-phy-outputs artefact")
+
+              with zf.open(inner_zip_name) as src, open(phy_zip_path, "wb") as dst:
+                  dst.write(src.read())
+              print(f"Saved {phy_zip_path.relative_to(repo_root)}")
+
+          # Stage .phy files from the saved archive into the working directory
+          extracted_any = False
+          with zipfile.ZipFile(phy_zip_path) as archive:
+              for member in archive.namelist():
+                  if not (member.endswith(".phy") or member.endswith(".phy.gz")):
+                      continue
+                  extracted_any = True
+                  target_name = Path(member).name
+                  if target_name.endswith(".gz"):
+                      target_name = target_name[:-3]
+                  target_path = repo_root / target_name
+                  with archive.open(member) as zipped_member:
+                      if member.endswith(".gz"):
+                          with gzip.open(zipped_member) as gz_member:
+                              data = gz_member.read()
+                      else:
+                          data = zipped_member.read()
+                  target_path.write_bytes(data)
+                  print(f"Wrote {target_path.relative_to(repo_root)}")
+
+          if not extracted_any:
+              raise SystemExit("No .phy or .phy.gz files found inside phy_outputs.zip")
+          PY
+
+      - name: Run replicate_figures.py
+        id: run-figures
+        shell: bash
+        run: |
+          status=0
+          python scripts/replicate_figures.py --skip-downloads --group "${{ matrix.group }}" || status=$?
+          echo "replicate_figures_exit_code=$status" >> "$GITHUB_OUTPUT"
+          if [[ $status -ne 0 ]]; then
+            echo "replicate_figures.py exited with status $status but continuing to allow artifact upload."
+          fi
+
+      - name: Copy CDS GLM outputs to data directory
+        if: always() && matrix.group == 'CDS'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p data
+          for f in cds_emm_adjusted.tsv cds_emm_nocov.tsv cds_pairwise_nocov.tsv; do
+            if [[ -f "$f" ]]; then
+              cp "$f" "data/$f"
+              echo "Copied $f to data/$f"
+            else
+              echo "Missing $f; skipping copy"
+            fi
+          done
+
+      - name: Collect generated outputs
+        if: always()
+        run: |
+          python - <<'PY'
+          import shutil
+          from pathlib import Path
+
+          root = Path('.')
+          figures_dest = Path('artifacts/figures')
+          figures_dest.mkdir(parents=True, exist_ok=True)
+          skip_dirs = {'analysis_downloads', 'artifacts'}
+          for pattern in ('*.png', '*.pdf', '*.svg', '*.txt', '*.tsv', '*.csv'):
+              for path in root.rglob(pattern):
+                  if path.is_file():
+                      if any(part in skip_dirs for part in path.parts):
+                          continue
+                      rel = path.relative_to(root)
+                      target = figures_dest / rel
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      shutil.copy2(path, target)
+
+          downloads_src = Path('analysis_downloads')
+          downloads_dest = Path('artifacts/downloads')
+          if downloads_src.exists():
+              if downloads_dest.exists():
+                  shutil.rmtree(downloads_dest)
+              shutil.copytree(downloads_src, downloads_dest)
+          PY
+
+      - name: Upload partial figures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: partial-figures-${{ matrix.group }}
+          path: artifacts/figures
+          if-no-files-found: warn
+
+      - name: Upload CDS data outputs
+        if: always() && matrix.group == 'CDS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cds-data
+          path: |
+            data/cds_emm_adjusted.tsv
+            data/cds_emm_nocov.tsv
+            data/cds_pairwise_nocov.tsv
+          if-no-files-found: warn
+
+      - name: Upload downloaded data artefacts
+        if: always() && matrix.group == 'CDS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-downloads
+          path: artifacts/downloads
+          if-no-files-found: warn
+
+  finalize-outputs:
+    runs-on: ubuntu-latest
+    needs: generate-figures
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download partial figure artefacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: partial-figures-*
+          path: partial-figures
+
+      - name: Merge figure artefacts
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/figures
+          shopt -s globstar nullglob dotglob
+          for dir in partial-figures/partial-figures-*; do
+            [[ -d "$dir" ]] || continue
+            for file in "$dir"/**/*; do
+              [[ -f "$file" ]] || continue
+              rel="${file#${dir}/}"
+              dest="artifacts/figures/$rel"
+              mkdir -p "$(dirname "$dest")"
+              cp "$file" "$dest"
+            done
+          done
+
+      - name: Ensure special gallery figures were generated
+        run: |
+          set -euo pipefail
+
+          readarray -t REQUIRED < <(python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = Path("web/figures-site/data/special-figures.json")
+          data = json.loads(manifest.read_text())
+
+          filenames: list[str] = []
+          for group in data.get("groups", []):
+              for fig in group.get("figures", []):
+                  name = fig.get("filename")
+                  if name:
+                      filenames.append(name)
+
+          if not filenames:
+              raise SystemExit("No figures listed in special-figures.json")
+
+          for name in filenames:
+              print(name)
+          PY)
+
+            missing=()
+            for relpath in "${REQUIRED[@]}"; do
+              found_path=$(find artifacts/figures -type f -path "*/${relpath}" -print -quit || true)
+              if [[ -z "$found_path" ]]; then
+                missing+=("$relpath")
+              fi
+            done
+
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            printf "Missing expected special gallery outputs:%s\n" " ${missing[*]}" >&2
+            exit 1
+          fi
+
+          echo "All required special gallery PDFs were generated."
+
+      - name: Download CDS data artefacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: cds-data
+          path: cds-data
+
+      - name: Download analysis downloads
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: analysis-downloads
+          path: artifacts/downloads
+
+      - name: Restore CDS data into repository
+        if: always()
+        run: |
+          set -euo pipefail
+          if [[ -d cds-data ]]; then
+            mkdir -p data
+            cp cds-data/*.tsv data/ || true
+          fi
+
+      - name: Commit and push data updates
+        if: always()
+        env:
+          PUSH_TOKEN: ${{ secrets.WRITE_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/cds_emm_adjusted.tsv || true
+          git add data/cds_emm_nocov.tsv || true
+          git add data/cds_pairwise_nocov.tsv || true
+
+          if git diff --staged --quiet; then
+            echo "No CDS GLM data changes to commit"
+          else
+            git commit -m "Update CDS GLM outputs from run-analysis workflow"
+            git pull https://${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git main --rebase --autostash --strategy=recursive -X ours
+            git push https://${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:main
+          fi
+
+      - name: Upload figure artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: figure-outputs
+          path: artifacts/figures
+          if-no-files-found: warn
